@@ -8,8 +8,10 @@ $username\
 $directory\
 [](fg:peach bg:green)\
 $git_branch\
+$git_state\
 $git_status\
 [](fg:green bg:teal)\
+$git_state\
 $c\
 $rust\
 $golang\
@@ -27,18 +29,6 @@ $time\
 $line_break$character"""
 
 palette = 'catppuccin_mocha'
-
-[palettes.gruvbox_dark]
-color_fg0 = '#fbf1c7'
-color_bg1 = '#3c3836'
-color_bg3 = '#665c54'
-color_blue = '#458588'
-color_aqua = '#689d6a'
-color_green = '#98971a'
-color_orange = '#d65d0e'
-color_purple = '#b16286'
-color_red = '#cc241d'
-color_yellow = '#d79921'
 
 [palettes.catppuccin_mocha]
 rosewater = "#f5e0dc"
@@ -102,15 +92,17 @@ format = '[ $user ]($style)'
 [directory]
 style = "fg:mantle bg:peach"
 format = "[ $path ]($style)"
-truncation_length = 3
+truncation_length = 15
 truncation_symbol = "…/"
+truncate_to_repo = true 
 
 [directory.substitutions]
 "Documents" = "󰈙 "
 "Downloads" = " "
 "Music" = "󰝚 "
 "Pictures" = " "
-"Developer" = "󰲋 "
+"code" = "󰲋 "
+"dotfiles" = " "
 
 [git_branch]
 symbol = ""
@@ -118,8 +110,23 @@ style = "bg:teal"
 format = '[[ $symbol $branch ](fg:base bg:green)]($style)'
 
 [git_status]
-style = "bg:teal"
-format = '[[($all_status$ahead_behind )](fg:base bg:green)]($style)'
+style = "fg:base bg:green"
+format = "[[(* $conflicted$untracked$modified$staged$renamed$deleted)](fg:base bg:green)($ahead_behind$stashed)](fg:base fg:reen)"
+ahead = "⇡${count} "
+diverged = "⇕⇡${ahead_count}⇣${behind_count} "
+behind = "⇣${count} "
+conflicted = "​[$count ](fg:base bg:green)​"
+untracked = "[!$count ](fg:base bg:green)​"
+modified = "[?$count ](fg:base bg:green)"
+staged = "[++$count ](fg:base bg:green)"
+renamed = " ​"
+deleted = "[󰆴$count ](fg:base bg:green)"
+stashed = "[$count ](fg:base bg:green)"
+up_to_date = "[](fg:base bg:green)"
+
+[git_state]
+format = '\([$state( $progress_current/$progress_total)]($style)\) '
+style = "bg:teal fg:base"
 
 [nodejs]
 symbol = ""
