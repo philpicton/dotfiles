@@ -1,4 +1,7 @@
 # Dotfiles
+![screenshot](https://github.com/user-attachments/assets/5a0d1eb9-5513-4d78-8731-9ff8297c0b84)
+
+![screenshot](https://github.com/user-attachments/assets/e1517a97-40e6-40ee-a507-08103c305a5f)
 
 This repo contains various configuration files for applications that I use. I am using GNU Stow to symlink these files from a local folder (`~/dotfiles` which I'm tracking in this repo) to their correct location.
 
