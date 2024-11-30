@@ -111,7 +111,7 @@ format = '[[ $symbol $branch ](fg:base bg:green)]($style)'
 
 [git_status]
 style = "fg:base bg:green"
-format = "[[(* $conflicted$untracked$modified$staged$renamed$deleted)](fg:base bg:green)($ahead_behind$stashed)](fg:base fg:green)"
+format = "[[(* $conflicted$untracked$modified$staged$renamed$deleted)](fg:base bg:green)($ahead_behind$stashed)](fg:base bg:green)"
 ahead = "⇡${count} "
 diverged = "⇕⇡${ahead_count}⇣${behind_count} "
 behind = "⇣${count} "
