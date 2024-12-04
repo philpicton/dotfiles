@@ -1,5 +1,8 @@
 "$schema" = 'https://starship.rs/config-schema.json'
 
+# Timeout for commands executed by starship (in milliseconds).
+command_timeout = 3600
+
 format = """
 [](surface0)\
 $os\
@@ -68,7 +71,7 @@ Ubuntu = "󰕈"
 SUSE = ""
 Raspbian = "󰐿"
 Mint = "󰣭"
-Macos = ""
+Macos = ""
 Manjaro = ""
 Linux = "󰌽"
 Gentoo = "󰣨"
@@ -122,7 +125,7 @@ staged = "[++$count ](fg:base bg:green)"
 renamed = " ​"
 deleted = "[󰆴$count ](fg:base bg:green)"
 stashed = "[$count ](fg:base bg:green)"
-up_to_date = "[](fg:base bg:green)"
+up_to_date = "[ ](fg:base bg:green)"
 
 [git_state]
 format = '\([$state( $progress_current/$progress_total)]($style)\) '
