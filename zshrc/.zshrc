@@ -21,3 +21,7 @@ function y() {
 	fi
 	rm -f -- "$tmp"
 }
+
+# set default directory for work
+cd ~/dt/app/
+

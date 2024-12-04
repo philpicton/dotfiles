@@ -14,7 +14,6 @@ $git_branch\
 $git_state\
 $git_status\
 [](fg:green bg:teal)\
-$git_state\
 $c\
 $rust\
 $golang\
@@ -128,8 +127,8 @@ stashed = "[$count ](fg:base bg:green)"
 up_to_date = "[ ](fg:base bg:green)"
 
 [git_state]
-format = '\([$state( $progress_current/$progress_total)]($style)\) '
-style = "bg:teal fg:base"
+format = '[$state( $progress_current/$progress_total) ]($style)'
+style = "bg:green fg:base"
 
 [nodejs]
 symbol = ""
