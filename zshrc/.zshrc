@@ -1,17 +1,21 @@
 export EDITOR="nvim"
 export SUDO_EDITOR="$EDITOR"
 
-HISTFILE=~/.history
 HISTSIZE=10000
-SAVEHIST=50000
+SAVEHIST=10000
+HISTFILE=~/.cache/zshhistory
+setopt appendhistory
 
+# export NVM_DIR="$HOME/.nvm"
+# [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+
+# export PATH="$HOME/go/bin:$PATH"
 source /usr/local/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 source $(brew --prefix)/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh 2>/dev/null
 source $(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh
 
 eval "$(starship init zsh)"
 
-test -e "${HOME}/.iterm2_shell_integration.zsh" && source "${HOME}/.iterm2_shell_integration.zsh"
 
 function y() {
 	local tmp="$(mktemp -t "yazi-cwd.XXXXXX")" cwd

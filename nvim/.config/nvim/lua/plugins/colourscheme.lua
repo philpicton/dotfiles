@@ -1,6 +1,6 @@
 return {
   -- add night-owl
-  { "oxfist/night-owl.nvim" },
+  --  { "oxfist/night-owl.nvim" },
 
   -- Configure LazyVim to load nightowl
   {
