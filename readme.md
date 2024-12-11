@@ -1,6 +1,6 @@
 # Dotfiles
 
-## Work version of the dotfiles.
+## Work version of the dotfiles
 
 This repo contains various configuration files for applications that I use. I am using GNU Stow to symlink these files from a local folder (`~/dotfiles` which I'm tracking in this repo) to their correct location.
 
@@ -22,8 +22,9 @@ Installed Packages (via homebrew)
   - fd
   - node
   - @vue/language-server
-- Firacode Nerd Font Propo
+- Firacode Nerd Font
 - starship
 - tmux
 - fzf
 - yazi
+  - glow
