@@ -10,7 +10,7 @@ setopt appendhistory
 # [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
 
 # export PATH="$HOME/go/bin:$PATH"
-source /usr/local/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+source $(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 source $(brew --prefix)/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh 2>/dev/null
 source $(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh
 
@@ -25,7 +25,4 @@ function y() {
 	fi
 	rm -f -- "$tmp"
 }
-
-# set default directory for work
-cd ~/dt/app/
 
