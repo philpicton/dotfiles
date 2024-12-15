@@ -26,7 +26,7 @@ vim.keymap.set({ "n", "v" }, "<C-S-Down>", ":MoveLine(1)<CR>", { desc = "Move li
 vim.keymap.set({ "n", "v" }, "<C-S-Up>", ":MoveLine(-1)<CR>", { desc = "Move line up" })
 
 -- Toggle live grep
-vim.keymap.set({ "n", "v" }, "<leader>gf", ":Telescope live_grep<CR>", { desc = "Telescope live grep" })
+-- vim.keymap.set({ "n", "v" }, "<leader>gf", ":Telescope live_grep<CR>", { desc = "Telescope live grep" })
 
 -- Git diff pick left or right
 vim.keymap.set("n", "<leader>g2", ":diffget //2<cr>", { desc = "diff get //2" })
