@@ -11,7 +11,6 @@ return {
       keymap = {
         preset = "enter",
         ["<S-CR>"] = { "select_and_accept" },
-        ["<Right>"] = { "select_and_accept" },
         ["<CR>"] = { "fallback" },
         ["<Tab>"] = {
           LazyVim.cmp.map({ "snippet_forward", "ai_accept" }),

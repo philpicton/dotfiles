@@ -3,6 +3,7 @@ return {
   { "fedepujol/move.nvim" },
   -- git blame
   { "f-person/git-blame.nvim" },
+
   -- {
   --   "David-Kunz/gen.nvim",
   --   opts = {
