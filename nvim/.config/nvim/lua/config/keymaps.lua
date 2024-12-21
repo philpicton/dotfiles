@@ -2,9 +2,6 @@
 -- Default keymaps that are always set: https://github.com/LazyVim/LazyVim/blob/main/lua/lazyvim/config/keymaps.lua
 -- Add any additional keymaps here
 
--- leader key is space
-vim.g.mapleader = " "
-
 -- Relative or absolute number lines
 vim.cmd([[
 function! NumberToggle()
@@ -32,7 +29,3 @@ vim.keymap.set({ "n", "v" }, "<C-S-Up>", ":MoveLine(-1)<CR>", { desc = "Move lin
 vim.keymap.set("n", "<leader>g2", ":diffget //2<cr>", { desc = "diff get //2" })
 vim.keymap.set("n", "<leader>g3", ":diffget //3<cr>", { desc = "diff get //3" })
 vim.keymap.set("n", "<leader>gd", ":Gvdiffsplit!`<cr>", { desc = "3 way diff split" })
-
--- Buffer Navigation
-vim.keymap.set({ "n", "v" }, "<leader><Right>", ":bnext<CR>", { desc = "Buffer right" })
-vim.keymap.set({ "n", "v" }, "<leader><Left>", ":bprevious<CR>", { desc = "Buffer left" })
