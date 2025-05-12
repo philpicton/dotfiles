@@ -10,6 +10,8 @@ Prerequisites (on Mac):
 brew install neovim ripgrep fd gnu-sed
 
 npm install -g neovim @volar/vue-language-server
+# actually this has changed name...I think its @vue/vue-language-server
+
 ```
 
 Then clone this repo into `~/.config/nvim`.
@@ -18,4 +20,4 @@ Don't forget to install any Language Servers you need, for example:
 
 ':TSInstall vue-language-server'
 
-If you are doing Vue development, don't install a Typescript Language Server. The Volar (vue language server) is set up to handle TS, and the TS server will not understand `.vue` files.
+If you are doing Vue development, don't install a separate Typescript Language Server. The Volar (vue language server) is set up to handle TS, and the TS server will not understand `.vue` files.

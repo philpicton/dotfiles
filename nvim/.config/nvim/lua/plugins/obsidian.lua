@@ -19,7 +19,7 @@ return {
     workspaces = {
       {
         name = "personal",
-        path = "~/Library/Mobile Documents/iCloud~md~obsidian/Documents/Phil Obsidian Vault",
+        path = "/Users/philpicton/Obsidian/digitickets",
       },
     },
   },

@@ -56,6 +56,15 @@ if vim.fn.hostname() == "Phils-MacBook-Pro.local" then
         },
       },
     },
+    keys = {
+      {
+        "<leader>su",
+        function()
+          Snacks.picker.undo()
+        end,
+        desc = "Undotree",
+      },
+    },
   }
 end
 -- If not here's the default snacks setup
