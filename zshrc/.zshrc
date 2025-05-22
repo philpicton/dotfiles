@@ -57,6 +57,12 @@ alias gf="git fetch"
 # neovim
 alias n="nvim"
 
+# dont use yarn anymore
+alias yarn="npm run"
+
+# watch generator 
+alias wg="cd ~/dt/app/ui/backoffice-vue3 && npm run watch-generator"
+
 # reset all
 function rst() {
     cd ~/dt/app &&

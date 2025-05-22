@@ -15,12 +15,20 @@ return {
     -- Required.
     "nvim-lua/plenary.nvim",
   },
+  ui = {
+    enable = false,
+  },
+
   opts = {
     workspaces = {
       {
         name = "personal",
         path = "/Users/philpicton/Obsidian/digitickets",
       },
+    },
+    picker = {
+      -- Set your preferred picker. Can be one of 'telescope.nvim', 'fzf-lua', or 'mini.pick'.
+      name = "telescope.nvim",
     },
   },
 }
