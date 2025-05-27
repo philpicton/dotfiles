@@ -23,7 +23,7 @@ return {
     workspaces = {
       {
         name = "personal",
-        path = "/Users/philpicton/Obsidian/digitickets",
+        path = "/Users/phil/Library/Mobile Documents/iCloud~md~obsidian/Documents/Phil Obsidian Vault",
       },
     },
     picker = {

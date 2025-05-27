@@ -48,7 +48,6 @@ function gch() {
 # fetch and checkout 
 function gfc() {
     git fetch && git checkout $1 &&
-        Say "Checked that out for you successfully Phil"
 }
 
 # fetch
@@ -56,34 +55,6 @@ alias gf="git fetch"
 
 # neovim
 alias n="nvim"
-
-# dont use yarn anymore
-alias yarn="npm run"
-
-# watch generator 
-alias wg="cd ~/dt/app/ui/backoffice-vue3 && npm run watch-generator"
-
-# reset all
-function rst() {
-    cd ~/dt/app &&
-        npm run turbo-reset &&
-        Say "Done your excellency" &&
-cat << "EOF" 
-                 .-'''-.                                     ✨
-_______         '   _    \                                           
-\  ___ `'.    /   /` '.   \    _..._         __.....__               
- ' |--.\  \  .   |     \  '  .'     '.   .-''         '.             
- | |    \  ' |   '      |  '.   .-.   . /     .-''"'-.  `.           
- | |     |  '\    \     / / |  '   '  |/     /________\   \          
- | |     |  | `.   ` ..' /  |  |   |  ||                  |          
- | |     ' .'    '-...-'`   |  |   |  |\    .-------------'          
- | |___.' /'                |  |   |  | \    '-.____...---.          
-/_______.'/                 |  |   |  |  `.             .'           
-\_______|/                  |  |   |  |    `''-...... -'             
-                            |  |   |  |                              
-                            '--'   '--'                              
-EOF
-}
 
 # Opens git branches in fuzzy finder and shows a list of the commits
 # which are different from HEAD (your current checkout)
