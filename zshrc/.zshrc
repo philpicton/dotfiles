@@ -1,4 +1,4 @@
-# Phil's zsh config for work 
+# Phil's zsh config for personal 
 #
 
 # The tool of the righteous
@@ -11,17 +11,9 @@ SAVEHIST=10000
 HISTFILE=~/.cache/zshhistory
 setopt appendhistory
 
-# loads NVM
-# export NVM_DIR="$HOME/.nvm"
-# [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" 
-
 # Go development
 # export PATH="$HOME/go/bin:$PATH"
 
-# zsh plugins
-source $(brew --prefix)/share/zsh-autocomplete/zsh-autocomplete.plugin.zsh
-source $(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
-source $(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh
 
 # This line adds about 2 seconds to the terminal's startup time but i don't care.
 eval "$(starship init zsh)"
@@ -47,7 +39,7 @@ function gch() {
 
 # fetch and checkout 
 function gfc() {
-    git fetch && git checkout $1 &&
+    git fetch && git checkout $1 
 }
 
 # fetch
@@ -72,3 +64,8 @@ function gchp() {
         --ansi --preview="git --no-pager log -150 --pretty=format:%s '..{2}'") || return
     git checkout $(awk '{print $2}' <<<"$target" )
 }
+
+# zsh plugins
+source $(brew --prefix)/share/zsh-autocomplete/zsh-autocomplete.plugin.zsh
+source $(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+source $(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
