@@ -18,13 +18,27 @@ setopt appendhistory
 # Go development
 # export PATH="$HOME/go/bin:$PATH"
 
-# zsh plugins
-source $(brew --prefix)/share/zsh-autocomplete/zsh-autocomplete.plugin.zsh
-source $(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
-source $(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh
 
 # This line adds about 2 seconds to the terminal's startup time but i don't care.
 eval "$(starship init zsh)"
+
+function say_done() {
+cat << "EOF" 
+                 .-'''-.                                     ✨
+_______         '   _    \                                           
+\  ___ `'.    /   /` '.   \    _..._         __.....__               
+ ' |--.\  \  .   |     \  '  .'     '.   .-''         '.             
+ | |    \  ' |   '      |  '.   .-.   . /     .-''"'-.  `.           
+ | |     |  '\    \     / / |  '   '  |/     /________\   \          
+ | |     |  | `.   ` ..' /  |  |   |  ||                  |          
+ | |     ' .'    '-...-'`   |  |   |  |\    .-------------'          
+ | |___.' /'                |  |   |  | \    '-.____...---.          
+/_______.'/                 |  |   |  |  `.             .'           
+\_______|/                  |  |   |  |    `''-...... -'             
+                            |  |   |  |                              
+                            '--'   '--'                              
+EOF
+}
 
 # Opens yazi file explorer, and CDs into the chosen folder or opens the selected file.
 function y() {
@@ -47,12 +61,17 @@ function gch() {
 
 # fetch and checkout 
 function gfc() {
-    git fetch && git checkout $1 &&
-        Say "Checked that out for you successfully Phil"
+    git fetch && git checkout $1 && say_done 
 }
 
 # fetch
 alias gf="git fetch"
+
+# app
+alias app="cd ~/dt/app"
+
+# vue3
+alias vv="cd ~/dt/app/ui/backoffice-vue3"
 
 # neovim
 alias n="nvim"
@@ -67,22 +86,7 @@ alias wg="cd ~/dt/app/ui/backoffice-vue3 && npm run watch-generator"
 function rst() {
     cd ~/dt/app &&
         npm run turbo-reset &&
-        Say "Done your excellency" &&
-cat << "EOF" 
-                 .-'''-.                                     ✨
-_______         '   _    \                                           
-\  ___ `'.    /   /` '.   \    _..._         __.....__               
- ' |--.\  \  .   |     \  '  .'     '.   .-''         '.             
- | |    \  ' |   '      |  '.   .-.   . /     .-''"'-.  `.           
- | |     |  '\    \     / / |  '   '  |/     /________\   \          
- | |     |  | `.   ` ..' /  |  |   |  ||                  |          
- | |     ' .'    '-...-'`   |  |   |  |\    .-------------'          
- | |___.' /'                |  |   |  | \    '-.____...---.          
-/_______.'/                 |  |   |  |  `.             .'           
-\_______|/                  |  |   |  |    `''-...... -'             
-                            |  |   |  |                              
-                            '--'   '--'                              
-EOF
+        say_done
 }
 
 # Opens git branches in fuzzy finder and shows a list of the commits
@@ -101,3 +105,8 @@ function gchp() {
         --ansi --preview="git --no-pager log -150 --pretty=format:%s '..{2}'") || return
     git checkout $(awk '{print $2}' <<<"$target" )
 }
+
+# zsh plugins
+source $(brew --prefix)/share/zsh-autocomplete/zsh-autocomplete.plugin.zsh
+source $(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+source $(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
