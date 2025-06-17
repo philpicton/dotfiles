@@ -11,4 +11,10 @@ return {
       colorscheme = "catppuccin-mocha",
     },
   },
+  {
+    "catppuccin",
+    opts = {
+      transparent_background = true,
+    },
+  },
 }
