@@ -65,6 +65,13 @@ function gchp() {
     git checkout $(awk '{print $2}' <<<"$target" )
 }
 
+# bun completions
+[ -s "/Users/phil/.bun/_bun" ] && source "/Users/phil/.bun/_bun"
+
+# bun
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
+
 # zsh plugins
 source $(brew --prefix)/share/zsh-autocomplete/zsh-autocomplete.plugin.zsh
 source $(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh
