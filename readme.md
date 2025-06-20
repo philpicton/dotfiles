@@ -14,7 +14,7 @@ Installed Packages (via homebrew)
 
 - gnu stow
 - kitty
-  - zsh autosuggestions and syntax highlighting
+  - zsh autosuggestions, autocomplete and syntax highlighting
 - neovim
   - wl-clipboard
   - lazygit
@@ -22,9 +22,23 @@ Installed Packages (via homebrew)
   - fd
   - node
   - @vue/language-server
-- Firacode Nerd Font
+  - lazydocker
+- Firacode Font and the Nerd Font (kitty terminal prefers to use normal font not the nerd patched one.)
 - starship
 - tmux
 - fzf
 - yazi
-  - glow
+- glow
+
+1. Clone this repo to ~/dotfiles and `cd` into it
+2. install the various configs with eg. `stow ghostty`
+
+NB if the folder/config file already exists on the machine you'll get an error.
+
+Watch out for hidden OS files like `.DS_Store` which can add themselves to the dotfiles folders, and the target location. Then when you try to stow to an empty folder, you still get the error.
+
+To prevent this:
+
+```bash
+touch ~/.stow-global-ignore && echo '\.DS_Store' >> ~/.stow-global-ignore
+```
