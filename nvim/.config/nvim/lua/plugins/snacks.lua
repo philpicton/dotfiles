@@ -36,6 +36,26 @@ if vim.fn.hostname() == "Phils-MacBook-Pro.local" then
   return {
     "folke/snacks.nvim",
     opts = {
+      scratch = {
+        ft = function()
+          return "markdown"
+        end,
+        win = {
+          keys = {
+            ["delete"] = {
+              "<c-d>",
+              function(self)
+                vim.api.nvim_win_call(self.win, function()
+                  vim.cmd([[close]])
+                  os.remove(vim.api.nvim_buf_get_name(self.buf))
+                end)
+              end,
+              desc = "Delete buffer",
+              mode = { "n", "x" },
+            },
+          },
+        },
+      },
       dashboard = {
         preset = {
           header = getDTHeader(),
@@ -71,6 +91,23 @@ end
 return {
   "folke/snacks.nvim",
   opts = {
+    scratch = {
+      win = {
+        keys = {
+          ["delete"] = {
+            "<c-d>",
+            function(self)
+              vim.api.nvim_win_call(self.win, function()
+                vim.cmd([[close]])
+                os.remove(vim.api.nvim_buf_get_name(self.buf))
+              end)
+            end,
+            desc = "Delete buffer",
+            mode = { "n", "x" },
+          },
+        },
+      },
+    },
     dashboard = {
       preset = {
         header = [[
