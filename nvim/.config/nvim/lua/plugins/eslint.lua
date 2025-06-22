@@ -15,6 +15,16 @@ return {
           workingDirectory = { mode = "auto" },
         },
       },
+      volar = {
+        settings = {
+          css = {
+            lint = {
+              -- Tailwind css @apply directive support for SFCs
+              unknownAtRules = "ignore",
+            },
+          },
+        },
+      },
     },
   },
 }
