@@ -14,8 +14,6 @@ setopt appendhistory
 # Go development
 # export PATH="$HOME/go/bin:$PATH"
 
-
-# This line adds about 2 seconds to the terminal's startup time but i don't care.
 eval "$(starship init zsh)"
 
 # Opens yazi file explorer, and CDs into the chosen folder or opens the selected file.
