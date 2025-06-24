@@ -1,0 +1,70 @@
+[NVIM] Add surrounding           | gsa {
+[NVIM] Bracket match             | %
+[NVIM] Buffers left/right        | H, L
+[NVIM] Comment above/below       | gcO, gco
+[NVIM] Indent (Visual mode)      | <, >
+[NVIM] Indent line               | <<, >>
+[NVIM] Jump fwd/back in code     | ctrl o, ctrl i
+[NVIM] List open buffers         | leader ,
+[NVIM] Markdown preview          | leader cp
+[NVIM] Move line up/down         | shift ctrl ↑/↓
+[NVIM] Navigate to character     | s char return
+[NVIM] New file                  | leader f n
+[NVIM] Notification history      | leader n
+[NVIM] Open link                 | gx
+[NVIM] Open MD scratch buffer    | leader .
+[NVIM] Quit                      | leader qq
+[NVIM] Replace whole file        | :%s/old/new/g
+[NVIM] Replace w/ prompt         | :%s/old/new/gc
+[NVIM] Search file               | / then n or N
+[NVIM] Select scratch            | leader S
+[NVIM] Splits                    | leader pipe or -
+[NVIM] Toggle fold               | za
+[NVIM] Toggle Formatting- buffer | leader u F (global f)
+[NVIM] Toggle linting            | leader ud
+[NVIM] Yank history              | leader p
+
+[YAZI] Cancel selection         | escape
+[YAZI] Create file/dir          | a (end with /)
+[YAZI] Delete                   | d
+[YAZI] Find                     | /
+[YAZI] Navigate                 | h, j, k, l
+[YAZI] Open file                | o, return
+[YAZI] Quit                     | q
+[YAZI] Select file(s)           | space
+[YAZI] Toggle hidden files      | .
+[YAZI] Undo                     | ctrl z
+[YAZI] Yank / Cut / Paste       | y, x, p
+
+[TERMINAL] Open Yazi                  | y
+[TERMINAL] Open Neovim                | n
+[TERMINAL] Git fuzzy checkout         | gch
+[TERMINAL] Git fetch + checkout (arg) | gfc x
+[TERMINAL] Git fetch                  | gf
+[TERMINAL] Reset all                  | rst
+[TERMINAL] Git fuzzy vs HEAD          | gchp
+[TERMINAL] cd into app / vue3         | app
+[TERMINAL] cd into vue3               | vv
+[TERMINAL] Watch generator            | wg
+[TERMINAL] Show shortcuts             | sc
+
+[CHROME] Chrome tabs L/R        | layer 3 a/s
+[CHROME] Close tab              | super w
+[CHROME] DevTools               | super shift i
+[CHROME] Hard refresh           | super shift r
+
+[MISC] Emoji picker             | ctrl super space
+[MISC] Maximize window          | layer 3 escape
+[MISC] Window split (L/R)       | layer 3 f/g
+[MISC] Show desktop             | super
+
+[KITTY] New tab                 | super t
+[KITTY] New tab (same cwd)      | f5 (layer 3 t)
+[KITTY] Prev/Next tab           | shift ctrl ←/→
+[KITTY] New split               | f2 (layer 3 w)
+[KITTY] Resize split            | super r
+[KITTY] Navigate splits         | super ldur
+[KITTY] Next layout             | ctrl shift l
+[KITTY] Toggle fullscreen       | ctrl super f
+[KITTY] Close tab               | super w
+[KITTY] Close split             | shift super d
