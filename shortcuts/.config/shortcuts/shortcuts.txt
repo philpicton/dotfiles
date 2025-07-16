@@ -23,6 +23,9 @@
 [NVIM] Toggle Formatting- buffer | leader u F (global f)
 [NVIM] Toggle linting            | leader ud
 [NVIM] Yank history              | leader p
+[NVIM] Toggle Git Blame          | leader gt
+[NVIM] Copy git commit SHA       | leader gy
+[NVIM] Git Browse to file in bb  | leader go
 
 [YAZI] Cancel selection         | escape
 [YAZI] Create file/dir          | a (end with /)
