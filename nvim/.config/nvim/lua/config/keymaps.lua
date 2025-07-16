@@ -36,4 +36,3 @@ vim.keymap.set("n", "<leader>k", "<cmd>LazyDocker<CR>", { desc = "Toggle LazyDoc
 -- Git blame
 vim.keymap.set({ "n" }, "<leader>gt", ":GitBlameToggle<CR>", { desc = "Toggle Git Blame" })
 vim.keymap.set({ "n" }, "<leader>gy", ":GitBlameCopySHA<CR>", { desc = "Copy Commit SHA" })
-vim.keymap.set({ "n" }, "<leader>go", ":GitBlameOpenFileURL<CR>", { desc = "Browse to file in gh/bb" })
