@@ -68,8 +68,24 @@ if vim.fn.hostname() == "Phils-MacBook-Pro.local" then
           { icon = " ", key = "r", desc = "Recent Files", action = ":lua Snacks.dashboard.pick('oldfiles')" },
           { icon = " ", key = "c", desc = "Config", action = ":lua Snacks.dashboard.pick('files', {cwd = vim.fn.stdpath('config')})" },
           { icon = " ", key = "s", desc = "Restore Session", section = "session" },
-          { icon = " ", key = "v", desc = "DT Open vue3 folder", action = ":lua Snacks.dashboard.pick('files', {cwd = '~/dt/app/ui/backoffice-vue3'})" },
-          { icon = " ", key = "a", desc = "DT Open app folder", action = ":lua Snacks.dashboard.pick('files', {cwd = '~/dt/app'})" },
+          {
+                icon = " ", key = "v", desc = "DT Open vue3 folder",
+                action = function()
+                local dir = "~/dt/app/ui/backoffice-vue3"
+                vim.cmd.cd(dir)
+                require("lazyvim.util").root(vim.fn.expand(dir))
+                Snacks.dashboard.pick("files", { cwd = vim.fn.expand(dir) })
+              end,
+          },
+          {
+                icon = " ", key = "a", desc = "DT Open app folder",
+                action = function()
+                local dir = "~/dt/app"
+                vim.cmd.cd(dir)
+                require("lazyvim.util").root(vim.fn.expand(dir))
+                Snacks.dashboard.pick("files", { cwd = vim.fn.expand(dir) })
+              end,
+          },
           { icon = "󰒲 ", key = "l", desc = "Lazy", action = ":Lazy" },
           { icon = " ", key = "q", desc = "Quit", action = ":qa" },
         },

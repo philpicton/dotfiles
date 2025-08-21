@@ -3,6 +3,7 @@ return {
   { "fedepujol/move.nvim" },
   -- git blame
   { "f-person/git-blame.nvim" },
+
   -- TODO: remove this when this pr gets merged: https://github.com/LazyVim/LazyVim/pull/6354
   {
     "akinsho/bufferline.nvim",
@@ -13,6 +14,7 @@ return {
       end
     end,
   },
+
   -- {
   --   "David-Kunz/gen.nvim",
   --   opts = {
