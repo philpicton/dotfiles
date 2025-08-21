@@ -173,6 +173,14 @@ function gchp() {
     git checkout $(awk '{print $2}' <<<"$target" )
 }
 
+# Backup Neovim config
+alias nvim-backup='mkdir -p ~/nvim_backups && tar -czf ~/nvim_backups/nvim-$(date +"%Y-%m-%d_%H-%M-%S").tar.gz -C ~/.config nvim && echo "Neovim config backed up."'
+
+# Restore Neovim config (interactive selector)
+alias nvim-restore='cd ~/nvim_backups && \
+  latest=$(ls -t nvim-*.tar.gz | fzf) && \
+  [ -n "$latest" ] && tar -xzf "$latest" -C ~/.config && echo "Restored $latest to ~/.config/nvim"'
+
 # zsh plugins
 source $(brew --prefix)/share/zsh-autocomplete/zsh-autocomplete.plugin.zsh
 source $(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh
