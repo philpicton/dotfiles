@@ -53,6 +53,8 @@
 [TERMINAL] cd into vue3               | vv
 [TERMINAL] Watch generator            | wg
 [TERMINAL] Show shortcuts             | sc
+[TERMINAL] backup nvim                | nvim-backup
+[TERMINAL] restore nvim backup        | nvim-restore
 
 [CHROME] Chrome tabs L/R        | layer 3 a/s
 [CHROME] Close tab              | super w
