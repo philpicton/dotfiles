@@ -29,6 +29,8 @@
 [NVIM] Git search commits        | leader gc
 [NVIM] Git log this file         | leader gf
 [NVIM] Git blame this line       | leader gb
+[NVIM] Explorer toggle hidden    | H
+[NVIM] Explorer toggle ignored   | I
 
 [YAZI] Cancel selection         | escape
 [YAZI] Create file/dir          | a (end with /)

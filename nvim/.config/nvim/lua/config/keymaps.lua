@@ -26,10 +26,6 @@ vim.keymap.set({ "n", "v" }, "<C-S-Up>", ":MoveLine(-1)<CR>", { desc = "Move lin
 vim.keymap.set("n", "<leader>g2", ":diffget //2<cr>", { desc = "diff get //2" })
 vim.keymap.set("n", "<leader>g3", ":diffget //3<cr>", { desc = "diff get //3" })
 
--- Buffer Navigation
-vim.keymap.set({ "n", "v" }, "<leader><Right>", ":bnext<CR>", { desc = "Buffer right" })
-vim.keymap.set({ "n", "v" }, "<leader><Left>", ":bprevious<CR>", { desc = "Buffer left" })
-
 -- Lazydocker
 vim.keymap.set("n", "<leader>k", "<cmd>LazyDocker<CR>", { desc = "Toggle LazyDocker", noremap = true, silent = true })
 

@@ -36,6 +36,25 @@ if vim.fn.hostname() == "Phils-MacBook-Pro.local" then
   return {
     "folke/snacks.nvim",
     opts = {
+      picker = {
+        hidden = true, -- show dot‑files by default in picker
+        ignored = true, -- include git‑ignored files in the picker
+        -- Also need to set for the "files" source explicitly
+        sources = {
+          files = {
+            hidden = true,
+            ignored = true,
+          },
+        },
+      },
+      -- For explorer (the tree / sidebar view)
+      explorer = {
+        files = {
+          hidden = true,
+          ignored = true,
+        },
+      },
+
       scratch = {
         ft = function()
           return "markdown"
@@ -107,6 +126,24 @@ end
 return {
   "folke/snacks.nvim",
   opts = {
+    picker = {
+      hidden = true, -- show dot‑files by default in picker
+      ignored = true, -- include git‑ignored files in the picker
+      -- Also need to set for the "files" source explicitly
+      sources = {
+        files = {
+          hidden = true,
+          ignored = true,
+        },
+      },
+    },
+    -- For explorer (the tree / sidebar view)
+    explorer = {
+      files = {
+        hidden = true,
+        ignored = true,
+      },
+    },
     scratch = {
       win = {
         keys = {
