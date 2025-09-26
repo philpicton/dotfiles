@@ -13,6 +13,7 @@
 [NVIM] Notification history      | leader n
 [NVIM] Open link                 | gx
 [NVIM] Open MD scratch buffer    | leader .
+[NVIM] Select MD scratch buffer  | leader S
 [NVIM] Quit                      | leader qq
 [NVIM] Replace whole file        | :%s/old/new/g
 [NVIM] Replace w/ prompt         | :%s/old/new/gc
