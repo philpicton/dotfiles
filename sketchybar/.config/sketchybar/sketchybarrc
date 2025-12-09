@@ -6,7 +6,47 @@ PLUGIN_DIR="$CONFIG_DIR/plugins"
 # https://felixkratz.github.io/SketchyBar/config/bar
 source "$CONFIG_DIR/theme/colours.sh"
 
-sketchybar --bar position=top height=30 blur_radius=30 color=$BAR_COLOUR
+sketchybar --bar position=top \
+height=30 \
+blur_radius=30 \
+color=$BAR_COLOUR \
+              --add item apple.logo left                                                      \
+              --set apple.logo icon=""                                                         \
+                               icon.font="FiraCode Nerd Font Mono:Regular:20.0"            \
+                               icon.padding_right=10                                     \
+                               label.drawing=off                                              \
+                               click_script="sketchybar -m --set \$NAME popup.drawing=toggle" \
+                               popup.background.drawing=on                                 \
+                               popup.background.border_width=2                                \
+                               popup.background.corner_radius=15                                \
+                               popup.background.color=$ITEM_BG_COLOUR                           \
+                               popup.background.border_color=$BORDER_COLOUR                       \
+                                                                                              \
+              --default background.padding_left=15                                             \
+                        background.padding_right=15                                            \
+                        icon.padding_right=5                                                  \
+                        icon.font="FiraCode Nerd Font Mono:Regular:22.0"            \
+                                                                                              \
+              --add item apple.preferences popup.apple.logo                                   \
+              --set apple.preferences icon=""                                                 \
+                               label="Preferences"                                            \
+                               click_script="open -a 'System Preferences';                    
+                                             sketchybar -m --set apple.logo popup.drawing=off"\
+              --add item apple.activity popup.apple.logo                                      \
+              --set apple.activity icon=""                                                    \
+                               label="Activity"                                               \
+                               click_script="open -a 'Activity Monitor';                       
+                                             sketchybar -m --set apple.logo popup.drawing=off"\
+              --add item apple.lock popup.apple.logo                                          \
+              --set apple.lock icon=""                                                         \
+                               label="Lock Screen"                                            \
+                               click_script="pmset displaysleepnow;                           
+                                             sketchybar -m --set apple.logo popup.drawing=off"\
+             --add item apple.shutdown popup.apple.logo                                      \
+             --set apple.shutdown icon="⏻"                                                    \
+                              label="Shutdown"                                               \
+                              click_script="osascript -e 'tell app \"System Events\" to shut down';
+                                            sketchybar -m --set apple.logo popup.drawing=off"
 
 ##### Defaults #####
 # For a full list of all available item properties see:
@@ -104,11 +144,6 @@ sketchybar --add item front_app center \
 # https://felixkratz.github.io/SketchyBar/config/events
 
 sketchybar --add item clock right \
-  label.drawing=on \
-  icon.padding_left=10 \
-  icon.padding_right=4 \
-  label.padding_left=4 \
-  label.padding_right=10 \
   --set clock update_freq=10 script="$PLUGIN_DIR/clock.sh" \
   --add item volume right \
   icon.padding_left=10 \
