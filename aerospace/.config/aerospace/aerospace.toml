@@ -12,7 +12,7 @@ after-login-command = []
 # You can use it to add commands that run after AeroSpace startup.
 # 'after-startup-command' is run after 'after-login-command'
 # Available commands : https://nikitabobko.github.io/AeroSpace/commands
-after-startup-command = []
+after-startup-command = ["exec-and-forget sketchybar"]
 
 # Start AeroSpace at login
 start-at-login = true
@@ -114,6 +114,8 @@ alt-equal = 'resize smart +50'
 alt-shift-enter = 'fullscreen'
 
 # See: https://nikitabobko.github.io/AeroSpace/commands#workspace
+alt-w = 'workspace Web'
+alt-c = 'workspace Code'
 alt-1 = 'workspace 1'
 alt-2 = 'workspace 2'
 alt-3 = 'workspace 3'
@@ -124,11 +126,9 @@ alt-7 = 'workspace 7'
 alt-8 = 'workspace 8'
 alt-9 = 'workspace 9'
 alt-a = 'workspace Admin'
-alt-c = 'workspace Code'
 alt-g = 'workspace Guitar'
 alt-m = 'workspace Music'
 alt-o = 'workspace Obsidian'
-alt-w = 'workspace Web'
 
 # See: https://nikitabobko.github.io/AeroSpace/commands#move-node-to-workspace
 alt-shift-1 = 'move-node-to-workspace 1 --focus-follows-window'
@@ -146,6 +146,7 @@ alt-shift-g = 'move-node-to-workspace Guitar --focus-follows-window'
 alt-shift-m = 'move-node-to-workspace Music --focus-follows-window'
 alt-shift-o = 'move-node-to-workspace Obsidian --focus-follows-window'
 alt-shift-w = 'move-node-to-workspace Web --focus-follows-window'
+
 
 # See: https://nikitabobko.github.io/AeroSpace/commands#workspace-back-and-forth
 alt-tab = 'workspace-back-and-forth'
@@ -174,3 +175,31 @@ alt-shift-h = ['join-with left', 'mode main']
 alt-shift-j = ['join-with down', 'mode main']
 alt-shift-k = ['join-with up', 'mode main']
 alt-shift-l = ['join-with right', 'mode main']
+
+[[on-window-detected]]
+if.app-name-regex-substring = 'Code|kitty'
+run = ['move-node-to-workspace Code --focus-follows-window']
+
+[[on-window-detected]]
+if.app-name-regex-substring = 'Obsidian'
+run = ['move-node-to-workspace Obsidian --focus-follows-window']
+
+[[on-window-detected]]
+if.app-name-regex-substring = 'Safari|Firefox|Vivaldi|Chrome'
+run = ['move-node-to-workspace Web --focus-follows-window']
+
+[[on-window-detected]]
+if.app-name-regex-substring = 'Music'
+run = ['move-node-to-workspace Music --focus-follows-window']
+
+[[on-window-detected]]
+if.app-name-regex-substring = 'GuitarPro'
+run = ['move-node-to-workspace Guitar --focus-follows-window']
+
+[[on-window-detected]]
+if.app-name-regex-substring = 'Mail|Calendar|Messages|Slack|Discord'
+run = ['move-node-to-workspace Admin --focus-follows-window']
+
+[[on-window-detected]]
+if.app-name-regex-substring = 'Finder|System Settings|System Preferences'
+run = ['move-node-to-workspace 1 --focus-follows-window']
