@@ -1,28 +1,17 @@
 # Dotfiles
-![screenshot](https://github.com/user-attachments/assets/5a0d1eb9-5513-4d78-8731-9ff8297c0b84)
 
-![screenshot](https://github.com/user-attachments/assets/e1517a97-40e6-40ee-a507-08103c305a5f)
+## New personal version of the dotfiles
 
 This repo contains various configuration files for applications that I use. I am using GNU Stow to symlink these files from a local folder (`~/dotfiles` which I'm tracking in this repo) to their correct location.
 
-There are many prerequisites necessary to have these files provide their full functionality, and a lot of the programs that these files configure prefer a particular operating system (by the way). Some don't.
-
 ## Installation
 
-These notes are really for my own benefit. At some point my arch linux installation will get borked by some silly mistake that I make and I'll undoubtedly decide to start again with a fresh install.
-
-Installed Packages (for hyprland setup on Arch, on top of a gnome DE with basic stuff)
+Installed Packages (via homebrew)
 
 - gnu stow
-- hyprland
-  - hyprlock
-  - hypridle
-  - hyprpaper
-  - hyprshot
-  - swaync
-  -
 - kitty
-  - zsh autocomplete and syntax highlighting
+  - zsh autosuggestions and syntax highlighting
+- Ghostty
 - neovim
   - wl-clipboard
   - lazygit
@@ -33,10 +22,6 @@ Installed Packages (for hyprland setup on Arch, on top of a gnome DE with basic 
 - Firacode Nerd Font
 - starship
 - tmux
-- waybar
-- wofi
-- change shell to zsh
-- nwg-look
-  - catppuccin-gtk-theme-mocha
-  - xdg-desktop-portal-gtk ?? // for themeing gtk stuff
-  - xdg-desktop-portal-hyprland ??
+- fzf
+- yazi
+  - glow

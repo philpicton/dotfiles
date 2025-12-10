@@ -1,5 +1,8 @@
 "$schema" = 'https://starship.rs/config-schema.json'
 
+# Timeout for commands executed by starship (in milliseconds).
+command_timeout = 3600
+
 format = """
 [](surface0)\
 $os\
@@ -11,15 +14,9 @@ $git_branch\
 $git_state\
 $git_status\
 [](fg:green bg:teal)\
-$git_state\
-$c\
-$rust\
 $golang\
 $nodejs\
 $php\
-$java\
-$kotlin\
-$haskell\
 $python\
 [](fg:teal bg:blue)\
 $docker_context\
@@ -68,7 +65,7 @@ Ubuntu = "󰕈"
 SUSE = ""
 Raspbian = "󰐿"
 Mint = "󰣭"
-Macos = ""
+Macos = ""
 Manjaro = ""
 Linux = "󰌽"
 Gentoo = "󰣨"
@@ -94,7 +91,7 @@ style = "fg:mantle bg:peach"
 format = "[ $path ]($style)"
 truncation_length = 15
 truncation_symbol = "…/"
-truncate_to_repo = true 
+truncate_to_repo = true
 
 [directory.substitutions]
 "Documents" = "󰈙 "
@@ -122,11 +119,11 @@ staged = "[++$count ](fg:base bg:green)"
 renamed = " ​"
 deleted = "[󰆴$count ](fg:base bg:green)"
 stashed = "[$count ](fg:base bg:green)"
-up_to_date = "[](fg:base bg:green)"
+up_to_date = "[ ](fg:base bg:green)"
 
 [git_state]
-format = '\([$state( $progress_current/$progress_total)]($style)\) '
-style = "bg:teal fg:base"
+format = '[$state( $progress_current/$progress_total) ]($style)'
+style = "bg:green fg:base"
 
 [nodejs]
 symbol = ""
