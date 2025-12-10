@@ -9,12 +9,6 @@ echo "Installing dotfiles from: $DOTFILES_DIR"
 # Create necessary directories
 mkdir -p ~/.config
 
-# Install zsh configuration
-if [ -f "$DOTFILES_DIR/zshrc/.zshrc" ]; then
-    echo "Installing zsh configuration..."
-    cp "$DOTFILES_DIR/zshrc/.zshrc" ~/.zshrc
-fi
-
 # Install neovim configuration
 if [ -d "$DOTFILES_DIR/nvim/.config/nvim" ]; then
     echo "Installing neovim configuration..."
