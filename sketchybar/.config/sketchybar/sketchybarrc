@@ -12,7 +12,7 @@ blur_radius=30 \
 color=$BAR_COLOUR \
               --add item apple.logo left                                                      \
               --set apple.logo icon=""                                                         \
-                               icon.font="FiraCode Nerd Font Mono:Regular:20.0"            \
+                               icon.font="MonoLisa Nerd Font Mono:Regular:20.0"            \
                                icon.padding_right=10                                     \
                                label.drawing=off                                              \
                                click_script="sketchybar -m --set \$NAME popup.drawing=toggle" \
@@ -25,7 +25,7 @@ color=$BAR_COLOUR \
               --default background.padding_left=15                                             \
                         background.padding_right=15                                            \
                         icon.padding_right=5                                                  \
-                        icon.font="FiraCode Nerd Font Mono:Regular:22.0"            \
+                        icon.font="MonoLisa Nerd Font Mono:Regular:22.0"            \
                                                                                               \
               --add item apple.preferences popup.apple.logo                                   \
               --set apple.preferences icon=""                                                 \
@@ -41,12 +41,7 @@ color=$BAR_COLOUR \
               --set apple.lock icon=""                                                         \
                                label="Lock Screen"                                            \
                                click_script="pmset displaysleepnow;                           
-                                             sketchybar -m --set apple.logo popup.drawing=off"\
-             --add item apple.shutdown popup.apple.logo                                      \
-             --set apple.shutdown icon="⏻"                                                    \
-                              label="Shutdown"                                               \
-                              click_script="osascript -e 'tell app \"System Events\" to shut down';
-                                            sketchybar -m --set apple.logo popup.drawing=off"
+                                             sketchybar -m --set apple.logo popup.drawing=off"
 
 ##### Defaults #####
 # For a full list of all available item properties see:
@@ -55,8 +50,8 @@ color=$BAR_COLOUR \
 default=(
   padding_left=10
   padding_right=10
-  icon.font="FiraCode Nerd Font Mono:Regular:17.0"
-  label.font="FiraCode Nerd Font Mono:Regular:17.0"
+  icon.font="MonoLisa Nerd Font Mono:Regular:17.0"
+  label.font="MonoLisa Nerd Font Mono:Regular:17.0"
   icon.color=$ICON_COLOUR
   label.color=$TEXT_COLOUR
   background.color=$ITEM_BG_COLOUR

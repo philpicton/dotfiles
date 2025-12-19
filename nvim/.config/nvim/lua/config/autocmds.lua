@@ -2,6 +2,8 @@
 -- Default autocmds that are always set: https://github.com/LazyVim/LazyVim/blob/main/lua/lazyvim/config/autocmds.lua
 -- Add any additional autocmds here
 
+-- Disable diagnostics for .env files
+-- Linter treats them as bash files, and complains about unused variables
 local lsp_hacks = vim.api.nvim_create_augroup("LspHacks", { clear = true })
 
 vim.api.nvim_create_autocmd({ "BufNewFile", "BufReadPost" }, {

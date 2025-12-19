@@ -29,3 +29,6 @@ vim.keymap.set("n", "<leader>g3", ":diffget //3<cr>", { desc = "diff get //3" })
 
 -- Lazydocker
 vim.keymap.set("n", "<leader>k", "<cmd>LazyDocker<CR>", { desc = "Toggle LazyDocker", noremap = true, silent = true })
+
+-- Save file with Cmd+S (macOS) or Ctrl+S
+vim.keymap.set({ "n", "i", "v" }, "<D-s>", "<cmd>w<CR>", { desc = "Save file" })
