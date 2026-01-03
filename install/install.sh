@@ -218,7 +218,7 @@ install_homebrew_packages() {
     sort -u "$temp_brewfile" -o "$temp_brewfile"
 
     print_info "Installing selected packages..."
-    brew bundle --file="$temp_brewfile" --no-lock
+    brew bundle --file="$temp_brewfile"
 
     rm "$temp_brewfile"
     print_success "Homebrew packages installed"
