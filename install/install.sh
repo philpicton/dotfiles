@@ -347,7 +347,7 @@ setup_symlinks() {
     local dir
     while IFS= read -r dir; do
         [[ -n "$dir" ]] && config_dirs+=("$dir")
-    done < <(find . -maxdepth 1 -type d ! -name '.' ! -name '.git' ! -name 'install' ! -name 'backgrounds' ! -name 'fonts' -exec basename {} \;)
+    done < <(find . -maxdepth 1 -type d ! -name '.' ! -name '.git' ! -name 'install' ! -name 'backgrounds' ! -name 'fonts' ! -name 'dev' -exec basename {} \;)
 
     if [[ ${#config_dirs[@]} -eq 0 ]]; then
         print_warning "No configuration directories found to stow"
