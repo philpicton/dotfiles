@@ -184,35 +184,43 @@ install_homebrew_packages() {
     sed -n '/# Formulae (Required)/,/# Casks (Required)/p' "$brewfile" | grep -E "^brew " >>"$temp_brewfile"
     sed -n '/# Casks (Required)/,/# Optional Formulae/p' "$brewfile" | grep -E "^cask " >>"$temp_brewfile"
 
-    # Optional: SketchyBar
-    if ask_yes_no "Install SketchyBar?"; then
-        grep -E "^(tap \"felixkratz|brew \"sketchybar)" "$brewfile" >>"$temp_brewfile"
-    fi
-
-    # Optional: AeroSpace
-    if ask_yes_no "Install AeroSpace (window manager)?"; then
-        grep -E "^(tap \"nikitabobko|cask \"aerospace)" "$brewfile" >>"$temp_brewfile"
-    fi
-
-    # Optional: Ghostty
-    if ask_yes_no "Install Ghostty (terminal emulator)?"; then
-        grep -E "^cask \"ghostty\"" "$brewfile" >>"$temp_brewfile"
-    fi
-
-    # Optional: tmux
-    if ask_yes_no "Install tmux (terminal multiplexer)?"; then
-        grep -E "^brew \"tmux\"" "$brewfile" >>"$temp_brewfile"
-    fi
-
-    # Optional: Bun
-    if ask_yes_no "Install Bun (JavaScript runtime)?"; then
-        grep -E "^(tap \"oven-sh|brew \"bun)" "$brewfile" >>"$temp_brewfile"
-    fi
-
-    # Optional: GitHub Copilot CLI
-    if ask_yes_no "Install GitHub Copilot CLI?"; then
-        grep -E "^brew \"github-copilot-cli\"" "$brewfile" >>"$temp_brewfile"
-    fi
+    # Process optional packages
+    print_info "Select optional packages to install..."
+    local in_optional=false
+    local current_tap=""
+    
+    while IFS= read -r line; do
+        # Check if we've reached the optional section
+        if [[ "$line" == "# Optional Formulae" ]]; then
+            in_optional=true
+            continue
+        fi
+        
+        # Skip empty lines and comments
+        [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
+        
+        if [[ "$in_optional" == true ]]; then
+            # Handle tap declarations
+            if [[ "$line" =~ ^tap[[:space:]]\"([^\"]+)\" ]]; then
+                current_tap="$line"
+                continue
+            fi
+            
+            # Handle brew/cask lines
+            if [[ "$line" =~ ^(brew|cask)[[:space:]]\"([^\"]+)\" ]]; then
+                local package_name="${BASH_REMATCH[2]}"
+                
+                if ask_yes_no "Install $package_name?"; then
+                    # Add the tap if there is one
+                    if [[ -n "$current_tap" ]]; then
+                        echo "$current_tap" >>"$temp_brewfile"
+                        current_tap=""
+                    fi
+                    echo "$line" >>"$temp_brewfile"
+                fi
+            fi
+        fi
+    done < "$brewfile"
 
     # Remove duplicates and sort
     sort -u "$temp_brewfile" -o "$temp_brewfile"
