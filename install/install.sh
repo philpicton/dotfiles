@@ -182,7 +182,7 @@ install_homebrew_packages() {
     # Always install required formulae and casks
     print_info "Adding required packages..."
     sed -n '/# Formulae (Required)/,/# Casks (Required)/p' "$brewfile" | grep -E "^brew " >>"$temp_brewfile"
-    sed -n '/# Casks (Required)/,/# Optional Formulae/p' "$brewfile" | grep -E "^cask " >>"$temp_brewfile"
+    sed -n '/# Casks (Required)/,/# Optional/p' "$brewfile" | grep -E "^cask " >>"$temp_brewfile"
 
     # Process optional packages
     print_info "Select optional packages to install..."
@@ -191,7 +191,7 @@ install_homebrew_packages() {
     
     while IFS= read -r line <&3; do
         # Check if we've reached the optional section
-        if [[ "$line" == "# Optional Formulae" ]]; then
+        if [[ "$line" == "# Optional Formulae & Casks" ]]; then
             in_optional=true
             continue
         fi
