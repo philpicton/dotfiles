@@ -9,7 +9,7 @@ I am using GNU Stow to symlink these files from this repository to their appropr
 To install these dotfiles on a new machine, run the install script. This script will install Homebrew, the necessary packages, and set up the dotfiles using Stow.
 
 ```bash
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/philpicton/dotfiles/main/install/install.sh)"
+bash <(curl -fsSL https://raw.githubusercontent.com/philpicton/dotfiles/main/install/install.sh) https://github.com/philpicton/dotfiles
 ```
 
 ## Dev containers

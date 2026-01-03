@@ -271,7 +271,11 @@ clone_dotfiles() {
         return 0
     fi
 
-    read -r -p "$(echo -e "${YELLOW}?${NC} Enter your dotfiles repository URL: ")" repo_url
+    local repo_url="$DOTFILES_REPO_URL"
+
+    if [[ -z "$repo_url" ]]; then
+        read -r -p "$(echo -e "${YELLOW}?${NC} Enter your dotfiles repository URL: ")" repo_url
+    fi
 
     if [[ -z "$repo_url" ]]; then
         print_error "No repository URL provided"
@@ -362,17 +366,20 @@ configure_shell() {
 ################################################################################
 
 main() {
+    # Parse command-line arguments
+    DOTFILES_REPO_URL="${1:-}"
+
     clear
     print_header "Dotfiles Installation Script"
 
     echo -e "${BOLD}This script will:${NC}"
     echo "  1. Install Xcode Command Line Tools"
     echo "  2. Install Homebrew"
-    echo "  3. Install selected packages via Homebrew"
-    echo "  4. Install Node.js global packages"
-    echo "  5. Clone your dotfiles repository"
+    echo "  3. Clone your dotfiles repository"
+    echo "  4. Install selected packages via Homebrew"
+    echo "  5. Install Node.js global packages"
     echo "  6. Install fonts"
-    echo "  7. Set up configuration symlinks"
+    echo "  7. Stow configuration files"
     echo "  8. Configure your shell"
     echo ""
 
@@ -392,7 +399,7 @@ main() {
     # Step 2: Homebrew
     install_homebrew
 
-    # Step 3: Clone dotfiles (moved earlier to access Brewfile)
+    # Step 3: Clone dotfiles
     if [[ ! -d "$HOME/.dotfiles" ]]; then
         clone_dotfiles
     else
