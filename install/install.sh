@@ -209,6 +209,11 @@ install_homebrew_packages() {
         grep -E "^(tap \"oven-sh|brew \"bun)" "$brewfile" >>"$temp_brewfile"
     fi
 
+    # Optional: GitHub Copilot CLI
+    if ask_yes_no "Install GitHub Copilot CLI?"; then
+        grep -E "^brew \"github-copilot-cli\"" "$brewfile" >>"$temp_brewfile"
+    fi
+
     # Remove duplicates and sort
     sort -u "$temp_brewfile" -o "$temp_brewfile"
 
@@ -235,11 +240,11 @@ install_node_globals() {
         "@vue/language-server"
     )
 
-    # Optional packages
+    # Optional npm packages
     local optional_packages=()
-    if ask_yes_no "Install GitHub Copilot CLI?"; then
-        optional_packages+=("@githubnext/github-copilot-cli")
-    fi
+    # if ask_yes_no "Install GitHub Copilot CLI?"; then
+    #     optional_packages+=("@githubnext/github-copilot-cli")
+    # fi
 
     local all_packages=("${required_packages[@]}" "${optional_packages[@]}")
     local total=${#all_packages[@]}
