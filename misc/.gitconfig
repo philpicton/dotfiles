@@ -1,0 +1,9 @@
+[user]
+	name = Phil Picton
+	email = hi@philpicton.dev
+[init]
+	defaultBranch = main
+[core]
+    pager = delta
+[delta]
+    side-by-side = true

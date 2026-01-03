@@ -1,4 +1,4 @@
-# Phil's zsh config for personal 
+# Phil's zsh config 
 #
 
 # The tool of the righteous
@@ -9,7 +9,6 @@ export SUDO_EDITOR="$EDITOR"
 HISTSIZE=10000
 SAVEHIST=10000
 HISTFILE=~/.cache/zshhistory
-mkdir -p ~/.cache
 setopt appendhistory
 
 # Go development
@@ -32,7 +31,7 @@ function gch() {
     local branches branch
     branches=$(git branch --all | grep -v HEAD) &&
     branch=$(echo "$branches" |
-           fzf -d $(( 2 + $(wc -l <<< "$branches") )) +m) &&
+           fzf-tmux -d $(( 2 + $(wc -l <<< "$branches") )) +m) &&
     git checkout $(echo "$branch" | sed "s/.* //" | sed "s#remotes/[^/]*/##")
 }
 
@@ -64,43 +63,23 @@ function gchp() {
     git checkout $(awk '{print $2}' <<<"$target" )
 }
 
-# bun completions (only if bun is installed)
-[ -s "$HOME/.bun/_bun" ] && source "$HOME/.bun/_bun"
+# bun completions
+[ -s "/Users/phil/.bun/_bun" ] && source "/Users/phil/.bun/_bun"
 
-# bun (only if bun is installed)
-if [ -d "$HOME/.bun" ]; then
-    export BUN_INSTALL="$HOME/.bun"
-    export PATH="$BUN_INSTALL/bin:$PATH"
-fi
+# bun
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
 
 # fuzzy search zsh history
 # use ctrl-r 
-if command -v fzf &> /dev/null; then
-    source <(fzf --zsh)
-fi
+source <(fzf --zsh)
 
-# Docker CLI completions (only if docker completions exist)
-if [ -d "$HOME/.docker/completions" ]; then
-    fpath=($HOME/.docker/completions $fpath)
-fi
-
-# Initialize completion system
+# The following lines have been added by Docker Desktop to enable Docker CLI completions.
+fpath=(/Users/phil/.docker/completions $fpath)
 autoload -Uz compinit
 compinit
-
-# Homebrew prefix (hardcoded for performance)
-# Intel Mac: /usr/local | Apple Silicon: /opt/homebrew
-if [[ -d "/opt/homebrew" ]]; then
-    BREW_PREFIX="/opt/homebrew"
-elif [[ -d "/usr/local/Homebrew" ]]; then
-    BREW_PREFIX="/usr/local"
-fi
+# End of Docker CLI completions
 
 # zsh plugins
-if [[ -n "$BREW_PREFIX" ]]; then
-    [ -f "$BREW_PREFIX/share/zsh-autosuggestions/zsh-autosuggestions.zsh" ] && \
-        source "$BREW_PREFIX/share/zsh-autosuggestions/zsh-autosuggestions.zsh"
-    
-    [ -f "$BREW_PREFIX/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" ] && \
-        source "$BREW_PREFIX/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
-fi
+source $(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+source $(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh

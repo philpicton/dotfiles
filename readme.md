@@ -6,46 +6,21 @@ I am using GNU Stow to symlink these files from this repository to their appropr
 
 ## Installation
 
-Installed Packages (This branch for macOS)
+To install these dotfiles on a new machine, run the install script. This script will install Homebrew, the necessary packages, and set up the dotfiles using Stow.
 
-- gnu stow
-- kitty
-- zsh autosuggestions
-  = zsh syntax highlighting
-- Ghostty
-- neovim
-  - wl-clipboard
-  - lazygit
-  - ripgrep
-  - fd
-  - fzf
-  - treesitter-cli
-  - c compiler (Xcode command line tools on macOS)
-  - Node Packages for neovim LSP support
-    - node & npm
-    - neovim npm package
-    - @vue/language-server
-    - typescript
-    - @typescript/language-server
+```bash
 
-- Firacode Nerd Font
-- starship
-- tmux
-- yazi
-- lazydocker
-- sketchybar
-- Aerospace
-- Docker
-  ... plus all my usual
+
+```
 
 ## Dev containers
 
-This repo also has an install script to copy some dotfiles into dev containers, which will be run from docker-compose.
+This repo also has an install script to copy some dotfiles into dev containers, which should be run from docker-compose.
 
-Clone the repo and run the install script
+Clone the repo and run the ./dev/install-dev.sh script
 
 ## TODOs
 
-- [ ] write brew file with all my installed packages/apps
-- [ ] write install script for macOS to install all and stow dotfiles
+- [x] write brew file with all my installed packages/apps
+- [x] write install script for macOS to install all and stow dotfiles
 - [ ] create repo for dev containers for frontend/php development once I have a nice setup
