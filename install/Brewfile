@@ -28,7 +28,7 @@ cask "bitwarden"
 cask "figma"
 cask "raycast"
 
-# Optional Formulae
+# Optional Formulae & Casks
 tap "felixkratz/formulae"
 brew "sketchybar"
 tap "nikitabobko/tap"
@@ -37,4 +37,4 @@ cask "ghostty"
 brew "tmux"
 tap "oven-sh/bun"
 brew "bun"
-brew "copilot-cli"
+cask "copilot-cli"
