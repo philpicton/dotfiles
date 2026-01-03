@@ -189,7 +189,7 @@ install_homebrew_packages() {
     local in_optional=false
     local current_tap=""
     
-    while IFS= read -r line; do
+    while IFS= read -r line <&3; do
         # Check if we've reached the optional section
         if [[ "$line" == "# Optional Formulae" ]]; then
             in_optional=true
@@ -220,7 +220,7 @@ install_homebrew_packages() {
                 fi
             fi
         fi
-    done < "$brewfile"
+    done 3< "$brewfile"
 
     # Remove duplicates and sort
     sort -u "$temp_brewfile" -o "$temp_brewfile"
