@@ -64,7 +64,7 @@ progress_bar() {
     local filled=$((width * current / total))
     local empty=$((width - filled))
 
-    printf "\r%sProgress:%s [" "$BOLD" "$NC"
+    printf "\r\033[1mProgress:\033[0m ["
     printf "%${filled}s" | tr ' ' '█'
     printf "%${empty}s" | tr ' ' '░'
     printf "] %s%%" "$percentage"
@@ -86,7 +86,7 @@ ask_yes_no() {
     fi
 
     while true; do
-        read -r -p "$(echo -e "${YELLOW}?${NC} $prompt")" response
+        read -r -p "$(echo -e "${YELLOW}?${NC} $prompt")" response </dev/tty
         response=${response:-$default}
         case "$response" in
         [Yy]*) return 0 ;;
@@ -198,12 +198,13 @@ install_homebrew_packages() {
 
     # Process optional packages
     print_info "Select optional packages to install..."
+
     local in_optional=false
     local current_tap=""
 
-    while IFS= read -r line; do
+    while IFS= read -r line <&3; do
         # Check if we've reached the optional section
-        if [[ "$line" == "# Optional Formulae & Casks" ]]; then
+        if [[ "$line" == "# Optional Formulae & Casks" || "$line" == "# Optional Formulae" ]]; then
             in_optional=true
             continue
         fi
@@ -228,7 +229,7 @@ install_homebrew_packages() {
             if [[ "$line" =~ ^(brew|cask)[[:space:]]\"([^\"]+)\" ]]; then
                 local package_name="${BASH_REMATCH[2]}"
 
-                if ask_yes_no "Install $package_name?" </dev/tty; then
+                if ask_yes_no "Install $package_name?"; then
                     # Add the tap if there is one
                     if [[ -n "$current_tap" ]]; then
                         echo "$current_tap" >>"$temp_brewfile"
@@ -241,7 +242,7 @@ install_homebrew_packages() {
                 fi
             fi
         fi
-    done <"$brewfile"
+    done 3<"$brewfile"
 
     # Remove duplicates and sort
     sort -u "$temp_brewfile" -o "$temp_brewfile"
@@ -280,7 +281,7 @@ install_node_globals() {
     #     optional_packages+=("@githubnext/github-copilot-cli")
     # fi
 
-    local all_packages=("${required_packages[@]}" "${optional_packages[@]}")
+    local all_packages=("${required_packages[@]}" ${optional_packages[@]+"${optional_packages[@]}"})
     local total=${#all_packages[@]}
     local current=0
 
@@ -345,8 +346,11 @@ setup_symlinks() {
     }
 
     # Get list of directories to stow (excluding non-config directories)
-    local config_dirs
-    mapfile -t config_dirs < <(find . -maxdepth 1 -type d ! -name '.' ! -name '.git' ! -name 'install' ! -name 'backgrounds' ! -name 'fonts' -exec basename {} \;)
+    local config_dirs=()
+    local dir
+    while IFS= read -r dir; do
+        [[ -n "$dir" ]] && config_dirs+=("$dir")
+    done < <(find . -maxdepth 1 -type d ! -name '.' ! -name '.git' ! -name 'install' ! -name 'backgrounds' ! -name 'fonts' -exec basename {} \;)
 
     if [[ ${#config_dirs[@]} -eq 0 ]]; then
         print_warning "No configuration directories found to stow"
@@ -489,10 +493,6 @@ main() {
     print_header "Installation Complete!"
 
     echo -e "${GREEN}${BOLD}✓ Your dotfiles have been installed successfully!${NC}\n"
-    echo -e "${BOLD}Next steps:${NC}"
-    echo "  1. Restart your terminal or run: source ~/.zshrc"
-    echo "  2. Review your configurations in ~/.dotfiles"
-    echo "  3. Customize as needed"
     echo ""
     echo -e "${BOLD}Installed to:${NC} $HOME/.dotfiles"
     echo ""
