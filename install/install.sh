@@ -244,9 +244,6 @@ install_homebrew_packages() {
         fi
     done 3<"$brewfile"
 
-    # Remove duplicates and sort
-    sort -u "$temp_brewfile" -o "$temp_brewfile"
-
     # Check if there are any packages to install
     if [[ -s "$temp_brewfile" ]]; then
         print_info "Installing selected packages..."
