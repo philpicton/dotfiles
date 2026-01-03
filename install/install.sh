@@ -5,7 +5,7 @@
 # Description: Automated setup script for macOS dotfiles and dependencies
 ################################################################################
 
-set -e
+set -euo pipefail
 
 # Colors and formatting
 BOLD='\033[1m'
@@ -54,6 +54,12 @@ progress_bar() {
     local current=$1
     local total=$2
     local width=50
+
+    # Avoid division by zero
+    if [[ $total -eq 0 ]]; then
+        return
+    fi
+
     local percentage=$((current * 100 / total))
     local filled=$((width * current / total))
     local empty=$((width - filled))
@@ -124,7 +130,7 @@ install_xcode_cli_tools() {
         # Fallback method
         xcode-select --install 2>/dev/null || true
         print_info "Please click 'Install' in the dialog box that appeared"
-        read -r -p "Press Enter once installation is complete..."
+        read -r -p "Press Enter once installation is complete..." </dev/tty
     fi
 
     rm -f /tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress
@@ -133,6 +139,7 @@ install_xcode_cli_tools() {
         print_success "Xcode Command Line Tools installed successfully"
     else
         print_error "Failed to install Xcode Command Line Tools"
+        print_warning "Please install manually and run this script again"
         return 1
     fi
 }
@@ -150,10 +157,14 @@ install_homebrew() {
 
     # Add Homebrew to PATH for Apple Silicon Macs
     if [[ $(uname -m) == "arm64" ]]; then
-        echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >>~/.zprofile
+        if ! grep -q '/opt/homebrew/bin/brew shellenv' ~/.zprofile 2>/dev/null; then
+            echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >>~/.zprofile
+        fi
         eval "$(/opt/homebrew/bin/brew shellenv)"
     else
-        echo 'eval "$(/usr/local/bin/brew shellenv)"' >>~/.zprofile
+        if ! grep -q '/usr/local/bin/brew shellenv' ~/.zprofile 2>/dev/null; then
+            echo 'eval "$(/usr/local/bin/brew shellenv)"' >>~/.zprofile
+        fi
         eval "$(/usr/local/bin/brew shellenv)"
     fi
 
@@ -161,7 +172,8 @@ install_homebrew() {
         print_success "Homebrew installed successfully"
     else
         print_error "Failed to install Homebrew"
-        exit 1
+        print_warning "Please install manually and run this script again"
+        return 1
     fi
 }
 
@@ -181,55 +193,69 @@ install_homebrew_packages() {
 
     # Always install required formulae and casks
     print_info "Adding required packages..."
-    sed -n '/# Formulae (Required)/,/# Casks (Required)/p' "$brewfile" | grep -E "^brew " >>"$temp_brewfile"
-    sed -n '/# Casks (Required)/,/# Optional/p' "$brewfile" | grep -E "^cask " >>"$temp_brewfile"
+    sed -n '/# Formulae (Required)/,/# Casks (Required)/p' "$brewfile" | grep -E "^brew " >>"$temp_brewfile" || true
+    sed -n '/# Casks (Required)/,/# Optional/p' "$brewfile" | grep -E "^cask " >>"$temp_brewfile" || true
 
     # Process optional packages
     print_info "Select optional packages to install..."
     local in_optional=false
     local current_tap=""
-    
-    while IFS= read -r line <&3; do
+
+    while IFS= read -r line; do
         # Check if we've reached the optional section
         if [[ "$line" == "# Optional Formulae & Casks" ]]; then
             in_optional=true
             continue
         fi
-        
-        # Skip empty lines and comments
-        [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
-        
+
+        # Skip empty lines and comments (but not after entering optional section check)
+        if [[ "$in_optional" == false ]]; then
+            [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
+        fi
+
+        # In optional section, skip empty lines and comments
+        [[ -z "$line" ]] && continue
+        [[ "$line" =~ ^[[:space:]]*#.*$ ]] && continue
+
         if [[ "$in_optional" == true ]]; then
             # Handle tap declarations
             if [[ "$line" =~ ^tap[[:space:]]\"([^\"]+)\" ]]; then
                 current_tap="$line"
                 continue
             fi
-            
+
             # Handle brew/cask lines
             if [[ "$line" =~ ^(brew|cask)[[:space:]]\"([^\"]+)\" ]]; then
                 local package_name="${BASH_REMATCH[2]}"
-                
-                if ask_yes_no "Install $package_name?"; then
+
+                if ask_yes_no "Install $package_name?" </dev/tty; then
                     # Add the tap if there is one
                     if [[ -n "$current_tap" ]]; then
                         echo "$current_tap" >>"$temp_brewfile"
                         current_tap=""
                     fi
                     echo "$line" >>"$temp_brewfile"
+                else
+                    # User declined, clear any pending tap
+                    current_tap=""
                 fi
             fi
         fi
-    done 3< "$brewfile"
+    done <"$brewfile"
 
     # Remove duplicates and sort
     sort -u "$temp_brewfile" -o "$temp_brewfile"
 
-    print_info "Installing selected packages..."
-    brew bundle --file="$temp_brewfile"
+    # Check if there are any packages to install
+    if [[ -s "$temp_brewfile" ]]; then
+        print_info "Installing selected packages..."
+        brew bundle --file="$temp_brewfile"
+        print_success "Homebrew packages installed"
+    else
+        print_warning "No packages selected for installation"
+    fi
 
     rm "$temp_brewfile"
-    print_success "Homebrew packages installed"
 }
 
 install_node_globals() {
@@ -261,12 +287,17 @@ install_node_globals() {
     print_info "Installing npm packages..."
     for package in "${all_packages[@]}"; do
         current=$((current + 1))
-        progress_bar "$current" "$total"
-        npm install -g "$package" &>/dev/null || print_warning "Failed to install $package"
+        if npm install -g "$package" &>/dev/null; then
+            progress_bar "$current" "$total"
+        else
+            echo ""
+            print_warning "Failed to install $package"
+            progress_bar "$current" "$total"
+        fi
     done
 
     echo ""
-    print_success "Node.js global packages installed"
+    print_success "Node.js global packages installation complete"
 }
 
 clone_dotfiles() {
@@ -282,7 +313,7 @@ clone_dotfiles() {
     local repo_url="$DOTFILES_REPO_URL"
 
     if [[ -z "$repo_url" ]]; then
-        read -r -p "$(echo -e "${YELLOW}?${NC} Enter your dotfiles repository URL: ")" repo_url
+        read -r -p "$(echo -e "${YELLOW}?${NC} Enter your dotfiles repository URL: ")" repo_url </dev/tty
     fi
 
     if [[ -z "$repo_url" ]]; then
@@ -290,8 +321,12 @@ clone_dotfiles() {
         return 1
     fi
 
-    git clone "$repo_url" "$dotfiles_dir"
-    print_success "Dotfiles cloned to $dotfiles_dir"
+    if git clone "$repo_url" "$dotfiles_dir"; then
+        print_success "Dotfiles cloned to $dotfiles_dir"
+    else
+        print_error "Failed to clone repository"
+        return 1
+    fi
 }
 
 setup_symlinks() {
@@ -304,20 +339,31 @@ setup_symlinks() {
         return 1
     fi
 
-    cd "$dotfiles_dir"
+    cd "$dotfiles_dir" || {
+        print_error "Failed to change to dotfiles directory"
+        return 1
+    }
 
     # Get list of directories to stow (excluding non-config directories)
     local config_dirs
     mapfile -t config_dirs < <(find . -maxdepth 1 -type d ! -name '.' ! -name '.git' ! -name 'install' ! -name 'backgrounds' ! -name 'fonts' -exec basename {} \;)
 
+    if [[ ${#config_dirs[@]} -eq 0 ]]; then
+        print_warning "No configuration directories found to stow"
+        return 0
+    fi
+
     for dir in "${config_dirs[@]}"; do
-        if ask_yes_no "Symlink $dir configuration?"; then
-            stow -v "$dir" 2>&1 | grep -v "BUG in find_stowed_path" || true
-            print_success "Symlinked $dir"
+        if ask_yes_no "Symlink $dir configuration?" </dev/tty; then
+            if stow -v "$dir" 2>&1 | grep -qv "BUG in find_stowed_path"; then
+                print_success "Symlinked $dir"
+            else
+                print_warning "Failed to symlink $dir (conflicts may exist)"
+            fi
         fi
     done
 
-    cd - >/dev/null
+    cd "$HOME" || return 0
 }
 
 install_fonts() {
@@ -330,7 +376,7 @@ install_fonts() {
         return 0
     fi
 
-    if ! ask_yes_no "Install fonts from fonts directory?"; then
+    if ! ask_yes_no "Install fonts from fonts directory?" </dev/tty; then
         print_info "Skipping font installation"
         return 0
     fi
@@ -360,9 +406,13 @@ configure_shell() {
 
     # Set zsh as default shell if not already
     if [[ "$SHELL" != *"zsh"* ]]; then
-        if ask_yes_no "Set zsh as default shell?"; then
-            chsh -s "$(which zsh)"
-            print_success "Default shell changed to zsh"
+        if ask_yes_no "Set zsh as default shell?" </dev/tty; then
+            print_info "You may be prompted for your password"
+            if chsh -s "$(which zsh)"; then
+                print_success "Default shell changed to zsh"
+            else
+                print_warning "Failed to change shell (you may need to do this manually)"
+            fi
         fi
     else
         print_success "zsh already set as default shell"
@@ -391,7 +441,7 @@ main() {
     echo "  8. Configure your shell"
     echo ""
 
-    if ! ask_yes_no "Do you want to continue?" "y"; then
+    if ! ask_yes_no "Do you want to continue?" "y" </dev/tty; then
         print_info "Installation cancelled"
         exit 0
     fi
@@ -402,10 +452,16 @@ main() {
     print_header "Starting Installation"
 
     # Step 1: Xcode CLI Tools
-    install_xcode_cli_tools
+    install_xcode_cli_tools || {
+        print_error "Cannot continue without Xcode Command Line Tools"
+        exit 1
+    }
 
     # Step 2: Homebrew
-    install_homebrew
+    install_homebrew || {
+        print_error "Cannot continue without Homebrew"
+        exit 1
+    }
 
     # Step 3: Clone dotfiles
     if [[ ! -d "$HOME/.dotfiles" ]]; then
@@ -441,7 +497,7 @@ main() {
     echo -e "${BOLD}Installed to:${NC} $HOME/.dotfiles"
     echo ""
 
-    if ask_yes_no "Would you like to restart your shell now?" "y"; then
+    if ask_yes_no "Would you like to restart your shell now?" "y" </dev/tty; then
         exec zsh -l
     fi
 }
