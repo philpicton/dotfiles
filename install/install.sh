@@ -257,12 +257,16 @@ install_homebrew_packages() {
 }
 
 install_node_globals() {
-    print_step "Installing Node.js global packages"
 
-    if ! command_exists node; then
-        print_warning "Node.js not installed, skipping global packages"
-        return 0
+    if ! command_exists node || ! command_exists npm; then
+        print_info "Node.js not found, installing Node.js LTS "
+        nvm install --lts
+        print_success "Node.js LTS installed"
+    else
+        print_success "Node.js already installed"
     fi
+
+    print_step "Installing Node.js global packages"
 
     # Required packages
     local required_packages=(
