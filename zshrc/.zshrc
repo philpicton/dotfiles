@@ -84,10 +84,6 @@ if [ -d "$HOME/.docker/completions" ]; then
     fpath=($HOME/.docker/completions $fpath)
 fi
 
-# Initialize completion system
-autoload -Uz compinit
-compinit
-
 export NVM_DIR="$HOME/.nvm"
 [ -s "/opt/homebrew/opt/nvm/nvm.sh" ] && \. "/opt/homebrew/opt/nvm/nvm.sh"  # This loads nvm
 [ -s "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm" ] && \. "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm"  # This loads nvm bash_completion
@@ -99,6 +95,10 @@ if [[ -d "/opt/homebrew" ]]; then
 elif [[ -d "/usr/local/Homebrew" ]]; then
     BREW_PREFIX="/usr/local"
 fi
+
+# Initialize completion system
+autoload -Uz compinit
+compinit
 
 # zsh plugins
 if [[ -n "$BREW_PREFIX" ]]; then
