@@ -28,6 +28,8 @@ cask "figma"
 cask "raycast"
 cask "notion"
 cask "slack"
+cask "mysqlworkbench"
+cask "postman"
 
 # Optional Formulae & Casks
 tap "felixkratz/formulae"
