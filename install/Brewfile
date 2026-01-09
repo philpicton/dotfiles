@@ -30,6 +30,7 @@ cask "notion"
 cask "slack"
 cask "mysqlworkbench"
 cask "postman"
+cask "1password"
 
 # Optional Formulae & Casks
 tap "felixkratz/formulae"
