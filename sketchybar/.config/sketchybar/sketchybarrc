@@ -125,7 +125,7 @@ sketchybar --add item front_app center \
   label.padding_right=20 \
   label.color=$ACTIVE_TEXT_COLOUR \
   script="$PLUGIN_DIR/front_app.sh" \
-  --subscribe front_app front_app_switched aerospace_monitor_change
+  --subscribe front_app front_app_switched aerospace_workspace_change aerospace_monitor_change
 
 ##### Adding Right Items #####
 # In the same way as the left items we can add items to the right side.

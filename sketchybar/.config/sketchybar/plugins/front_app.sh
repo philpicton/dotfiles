@@ -9,4 +9,12 @@ MONITOR=$(aerospace list-monitors --focused | cut -d'|' -f1 | tr -d ' ')
 
 if [ "$SENDER" = "front_app_switched" ]; then
     sketchybar --set "$NAME" label="[$MONITOR] → $INFO"
+elif [ "$SENDER" = "aerospace_workspace_change" ] || [ "$SENDER" = "aerospace_monitor_change" ]; then
+    WORKSPACE=$(aerospace list-workspaces --focused)
+    FRONT_APP=$(aerospace list-windows --workspace "$WORKSPACE" --format "%{app-name}" 2>/dev/null | head -n 1)
+    if [ -z "$FRONT_APP" ]; then
+        sketchybar --set "$NAME" label="[$MONITOR] → No App"
+    else
+        sketchybar --set "$NAME" label="[$MONITOR] → $FRONT_APP"
+    fi
 fi
