@@ -26,8 +26,6 @@ cask "warp"
 cask "bitwarden"
 cask "figma"
 cask "raycast"
-cask "notion"
-cask "slack"
 
 # Optional Formulae & Casks
 tap "felixkratz/formulae"
