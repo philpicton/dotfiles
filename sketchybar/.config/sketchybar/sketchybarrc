@@ -115,14 +115,15 @@ for mid in $(aerospace list-monitors | cut -c1); do
 done
 
 # Front app!!
-sketchybar --add item front_app center \
-  --set front_app icon.drawing=off \
+sketchybar --add item front_app center\
+  --set front_app icon.drawing=on \
   label.drawing=on \
-  label.background.color=$BORDER_COLOUR \
-  label.background.height=24 \
-  label.background.corner_radius=15 \
-  label.padding_left=20 \
+  background.color=$BORDER_COLOUR \
+  background.height=24 \
+  background.corner_radius=15 \
+  icon.padding_left=10 \
   label.padding_right=20 \
+  icon.color=$ACTIVE_ICON_COLOUR \
   label.color=$ACTIVE_TEXT_COLOUR \
   script="$PLUGIN_DIR/front_app.sh" \
   --subscribe front_app front_app_switched aerospace_workspace_change aerospace_monitor_change
@@ -139,15 +140,17 @@ sketchybar --add item front_app center \
 # https://felixkratz.github.io/SketchyBar/config/events
 
 sketchybar --add item focus right \
-  --set focus update_freq=360 \
+  --set focus update_freq=10 \
   display=1 \
   icon.padding_left=10 \
   icon.padding_right=4 \
   label.padding_left=4 \
   label.padding_right=10 \
   script="$PLUGIN_DIR/focus.sh" \
+  --add item calendar_event right \
+  --set calendar_event update_freq=30 script="$PLUGIN_DIR/calendar_event.sh" \
   --add item clock right \
-  --set clock update_freq=10 script="$PLUGIN_DIR/clock.sh" \
+  --set clock update_freq=1 script="$PLUGIN_DIR/clock.sh" \
   --add item volume right \
   --set volume display=1 \
   icon.padding_left=10 \

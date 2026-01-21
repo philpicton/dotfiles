@@ -34,3 +34,5 @@ export ITEM_BG_COLOUR=$transparent_base_darker
 export ACTIVE_ITEM_BG_COLOUR=$green
 export SHADOW_COLOUR=$transparent_base
 export BORDER_COLOUR=$sapphire
+export CALENDAR_EVENT_COLOUR=$yellow
+export CALENDAR_ICON_COLOUR=$red

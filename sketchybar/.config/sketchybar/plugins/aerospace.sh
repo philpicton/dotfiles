@@ -7,7 +7,8 @@ if [ "$SENDER" == "mouse.entered" ]; then
     if [ "$1" = "$FOCUSED_WORKSPACE" ]; then
         exit 0
     fi
-    sketchybar --set "$NAME" \
+    sketchybar --animate sin 20 \
+        --set "$NAME" \
         background.drawing=on \
         label.color="$ACTIVE_TEXT_COLOUR" \
         icon.color="$ACTIVE_ICON_COLOUR" \
@@ -19,7 +20,8 @@ if [ "$SENDER" == "mouse.exited" ]; then
     if [ "$1" = "$FOCUSED_WORKSPACE" ]; then
         exit 0
     fi
-    sketchybar --set "$NAME" \
+    sketchybar --animate sin 20 \
+        --set "$NAME" \
         background.drawing=off \
         label.color="$TEXT_COLOUR" \
         icon.color="$ICON_COLOUR" \
