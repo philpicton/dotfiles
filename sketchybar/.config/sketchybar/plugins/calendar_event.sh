@@ -7,7 +7,7 @@ source "$CONFIG_DIR/theme/colours.sh"
 result=$(shortcuts run "Get Next Calendar Event" 2>/dev/null)
 
 if [ -z "$result" ]; then
-    sketchybar --set "$NAME" label="" icon.drawing=off
+    sketchybar --set "$NAME" label="error" icon.drawing=on icon=
     exit 0
 fi
 
@@ -80,5 +80,5 @@ if [ -n "$title" ]; then
             label.padding_right=10
     fi
 else
-    sketchybar --set "$NAME" label="" icon.drawing=off
+    sketchybar --set "$NAME" label="error" icon.drawing=on icon=
 fi

@@ -26,6 +26,9 @@ elif [ "$FOCUS" == "Fitness" ]; then
 elif [ "$FOCUS" == "Reduce Interruptions" ]; then
     ICON="⏣"
     LABEL="Reduce"
+elif [ "$FOCUS" == "Meeting" ]; then
+    ICON=""
+    LABEL=$FOCUS
 else
     ICON="☣︎"
     LABEL="$FOCUS"
