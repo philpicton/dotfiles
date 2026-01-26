@@ -4,7 +4,7 @@ FOCUS=$(shortcuts run "Get Current Focus" 2>/dev/null)
 
 if [ -z "$FOCUS" ] || [ "$FOCUS" == "null" ]; then
     ICON=""
-    LABEL=""
+    LABEL="not set"
 elif [ "$FOCUS" == "Personal" ]; then
     ICON="☢︎"
     LABEL="$FOCUS"
