@@ -24,6 +24,15 @@ return {
     })
   end,
   opts = {
+    -- show images in obsidian files
+    image = {
+      resolve = function(path, src)
+        local api = require("obsidian.api")
+        if api.path_is_note(path) then
+          return api.resolve_attachment_path(src)
+        end
+      end,
+    },
     dashboard = {
       preset = {
         header = [[
@@ -61,6 +70,7 @@ return {
           { icon = " ", key = "n", desc = "New File", action = ":ene | startinsert" },
           { icon = " ", key = "g", desc = "Find Text", action = ":lua Snacks.dashboard.pick('live_grep')" },
           { icon = " ", key = "r", desc = "Recent Files", action = ":lua Snacks.dashboard.pick('oldfiles')" },
+          { icon = " ", key = "o", desc = "Open obsidian note", action = ":Obsidian quick_switch" },
           { icon = " ", key = "c", desc = "Config", action = ":lua Snacks.dashboard.pick('files', {cwd = vim.fn.stdpath('config')})" },
           { icon = " ", key = "s", desc = "Restore Session", section = "session" },
           { icon = "󰒲 ", key = "l", desc = "Lazy", action = ":Lazy" },

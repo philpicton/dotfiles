@@ -141,16 +141,16 @@ sketchybar --add item front_app center\
 
 sketchybar --add item clock right \
   --set clock update_freq=1 script="$PLUGIN_DIR/clock.sh" \
-  --add item focus right \
-  --set focus update_freq=10 \
-  display=1 \
-  icon.padding_left=10 \
-  icon.padding_right=4 \
-  label.padding_left=4 \
-  label.padding_right=10 \
-  script="$PLUGIN_DIR/focus.sh" \
-  --add item calendar_event right \
-  --set calendar_event update_freq=30 script="$PLUGIN_DIR/calendar_event.sh" \
+  # --add item focus right \
+  # --set focus update_freq=10 \
+  # display=1 \
+  # icon.padding_left=10 \
+  # icon.padding_right=4 \
+  # label.padding_left=4 \
+  # label.padding_right=10 \
+  # script="$PLUGIN_DIR/focus.sh" \
+  # --add item calendar_event right \
+  # --set calendar_event update_freq=30 script="$PLUGIN_DIR/calendar_event.sh" \
   --add item volume right \
   --set volume display=1 \
   icon.padding_left=10 \
