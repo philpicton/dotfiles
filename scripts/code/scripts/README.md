@@ -1,4 +1,6 @@
-# Haya Repositories Manager
+# REPO-MAN
+
+> ✨ Haya Repositories Manager ✨
 
 Small terminal menu app for managing multiple Git repos from one place.
 
@@ -53,7 +55,7 @@ sudo apt install -y docker.io
 
 Edit the `REPOS` list in:
 
-- [./haya-repos.py](./haya-repos.py)
+- [./repo-man.py](./repo-man.py)
 
 Use absolute paths or `~` paths.
 
@@ -62,7 +64,7 @@ Use absolute paths or `~` paths.
 ## Make it executable
 
 ```bash
-chmod +x haya-repos.py
+chmod +x repo-man.py
 ```
 
 Run it directly (adjust path as required):
@@ -74,7 +76,7 @@ Run it directly (adjust path as required):
 Or via Python:
 
 ```bash
-python3 haya-repos.py
+python3 repo-man.py
 ```
 
 ---
@@ -84,7 +86,7 @@ python3 haya-repos.py
 Add to your shell config:
 
 ```bash
-alias haya='python3 ~/haya-repos.py'
+alias haya='python3 ~/repo-man.py'
 ```
 
 Adjust the path to match your local location.
@@ -99,7 +101,7 @@ Code editors are defined in `EDITOR_MENU_OPTIONS` and dispatched by function nam
 
 You'll need to write a function with the right launch command for your editor.
 
-In [haya-repos.py](./haya-repos.py), add a function with this signature:
+In [repo-man.py](./repo-man.py), add a function with this signature:
 
 ```python
 def open_repo_in_example(repo_path: Path) -> Tuple[int, str]:

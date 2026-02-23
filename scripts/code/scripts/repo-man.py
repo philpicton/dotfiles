@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+REPO MAN
 Haya Repositories Manager - TUI for managing git repositories
 
 """
@@ -439,7 +440,8 @@ def show_menu():
     print(f"{ORANGE}{ascii_art}{RESET}")
     
     print("~" * 60)
-    print(f"  {ORANGE}               HAYA REPOSITORIES MANAGER{RESET}")
+    print(f"  {ORANGE}                        REPO-MAN{RESET}")
+    print(f"                ✨Haya Repositories Manager✨")
     print("~" * 60)
     print("\nOptions:")
     print("  1. Show git status of all repos")
@@ -785,7 +787,7 @@ def option_5_make_restart():
     
     response = input("Continue? (y/n): ").lower()
     if response != 'y':
-        print("\n✗ Aborted.")
+        print(f"\n{RED}✗ Aborted.{RESET}")
         wait_for_key()
         return
     
