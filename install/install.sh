@@ -266,7 +266,7 @@ install_node_globals() {
         print_success "Node.js already installed"
     fi
 
-    print_step "Installing Node.js global packages"
+    print_step "Installing Node.js global packages (remember these are only installed for this node version!!)"
 
     # Required packages
     local required_packages=(
