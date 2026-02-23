@@ -1,4 +1,4 @@
-# Phil's zsh config for personal 
+# Phil's zsh config for work 
 #
 
 # The tool of the righteous
@@ -46,6 +46,10 @@ alias gf="git fetch"
 
 # neovim
 alias n="nvim"
+
+# haya repo man
+alias haya="python3 ~/code/scripts/haya-repos.py"
+alias hh="python3 ~/code/scripts/haya-repos.py"
 
 # Opens git branches in fuzzy finder and shows a list of the commits
 # which are different from HEAD (your current checkout)
@@ -109,5 +113,6 @@ if [[ -n "$BREW_PREFIX" ]]; then
         source "$BREW_PREFIX/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
 fi
 
+# php homebrew path
 export PATH="/opt/homebrew/opt/php@8.3/bin:$PATH"
 export PATH="/opt/homebrew/opt/php@8.3/sbin:$PATH"
