@@ -56,6 +56,16 @@ EDITOR_MENU_OPTIONS = [
     },
 ]
 
+MAKE_COMMANDS = [
+    {'key': '1', 'label': 'Restart docker containers, manage node modules', 'command': 'make restart'},
+    {'key': '2', 'label': 'Rebuild containers and app', 'command': 'make init'},
+    {'key': '3', 'label': 'Containers down', 'command': 'make down'},
+    {'key': '4', 'label': 'Artisan migrate', 'command': 'docker compose exec haysto-api php artisan migrate'},
+    {'key': '5', 'label': 'Update permissions', 'command': 'make update_permissions'},
+    {'key': '6', 'label': 'Bulk seed cases', 'command': 'make cases'},
+    {'key': '7', 'label': 'Seed a case at a particular stage', 'command': 'make case'},
+]
+
 def clear_screen():
     """Clear the terminal screen."""
     os.system('clear')
@@ -448,7 +458,7 @@ def show_menu():
     print("  2. Hard reset all to main")
     print("  3. Stash changes and checkout all to main")
     print("  4. Checkout specific branches")
-    print("  5. Run make restart")
+    print("  5. Run make command")
     print("  6. Open a repo in code editor")
     print("  7. Show docker container info")
     print("  8. Quit")
@@ -756,14 +766,14 @@ def option_4_checkout_branches():
     wait_for_key()
 
 
-def option_5_make_restart():
+def option_5_run_make_command():
     """
-    Option 5: Run 'make restart' in the parent repository.
+    Option 5: Run a make command in the parent repository.
     
     """
     clear_screen()
     print("~" * 60)
-    print(f"  {ORANGE}RUN MAKE RESTART{RESET}")
+    print(f"  {ORANGE}RUN MAKE COMMAND{RESET}")
     print("~" * 60)
     print()
     
@@ -781,11 +791,29 @@ def option_5_make_restart():
         return
     
     print(f"Repository: {parent_repo}")
-    print(f"\n{YELLOW}⚠️  This will run 'make restart' in the parent repository.{RESET}")
-    print("The behavior depends on your Makefile configuration.")
-    print()
+    print("\nSelect a command to run:")
     
-    response = input("Continue? (y/n): ").lower()
+    for cmd in MAKE_COMMANDS:
+        print(f"  {cmd['key']}. {cmd['label']}")
+    
+    print("\nPress number to select command, or q to cancel.")
+    
+    choice = get_single_char()
+    
+    if choice in ('q', 'Q', '\x1b'):
+        return
+
+    selected_cmd = next((c for c in MAKE_COMMANDS if c['key'] == choice), None)
+    
+    if not selected_cmd:
+        print(f"\n{RED}✗ Invalid selection.{RESET}")
+        wait_for_key()
+        return
+
+    print(f"\nSelected: {ORANGE}{selected_cmd['label']}{RESET}")
+    print(f"Command: {selected_cmd['command']}")
+    
+    response = input("\nRun this command? (y/n): ").lower()
     if response != 'y':
         print(f"\n{RED}✗ Aborted.{RESET}")
         wait_for_key()
@@ -793,31 +821,27 @@ def option_5_make_restart():
     
     clear_screen()
     print("~" * 60)
-    print(f"  {ORANGE}RUNNING MAKE RESTART...{RESET}")
+    print(f"  {ORANGE}RUNNING: {selected_cmd['label']}...{RESET}")
     print("~" * 60)
     print()
     
-    # Run make restart with full interactivity (no output capturing)
-    # This allows the Makefile to prompt the user for input
     try:
-        # Change to the parent repo directory and run make restart
-        # Using os.system() runs the command in the current terminal session
-        # which preserves full interactivity including prompts
+        # Change to the parent repo directory
         original_dir = os.getcwd()
         os.chdir(parent_repo)
         
-        returncode = os.system('make restart')
+        returncode = os.system(selected_cmd['command'])
         
         os.chdir(original_dir)
         
         print("\n" + "~" * 60)
         if returncode == 0:
-            print(f"{GREEN}✓ Make restart completed successfully{RESET}")
+            print(f"{GREEN}✓ Command completed successfully{RESET}")
         else:
-            print(f"{RED}✗ Make restart failed with exit code {returncode}{RESET}")
+            print(f"{RED}✗ Command failed with exit code {returncode}{RESET}")
     
     except Exception as e:
-        print(f"{RED}✗ Error running make restart: {e}{RESET}")
+        print(f"{RED}✗ Error running command: {e}{RESET}")
         # Make sure we restore the original directory
         try:
             os.chdir(original_dir)
@@ -1033,7 +1057,7 @@ def main():
             elif choice == '4':
                 option_4_checkout_branches()
             elif choice == '5':
-                option_5_make_restart()
+                option_5_run_make_command()
             elif choice == '6':
                 option_6_open_in_code_editor()
             elif choice == '7':
