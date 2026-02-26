@@ -11,6 +11,9 @@ import subprocess
 import sys
 import tty
 import termios
+import datetime
+import getpass
+import json
 from pathlib import Path
 from typing import List, Tuple
 
@@ -418,6 +421,69 @@ def validate_repos() -> bool:
     return True
 
 
+def get_time_greeting() -> str:
+    """Generate greeting based on time of day."""
+    current_hour = datetime.datetime.now().hour
+    try:
+        username = getpass.getuser().capitalize()
+    except Exception:
+        username = "User"
+
+    if 0 <= current_hour < 12:
+        greeting = "Good morning"
+    elif 12 <= current_hour < 18:
+        greeting = "Good afternoon"
+    elif 18 <= current_hour < 22:
+        greeting = "Good evening"
+    else:
+        greeting = "Good night"
+    
+    return f"{greeting} {username}"
+
+
+def get_github_review_requests() -> int:
+    """Get the number of pull requests requested for review on GitHub."""
+    if shutil.which('gh') is None:
+        return -1
+    
+    try:
+        # Check for open PRs with review requested from the current user (@me)
+        result = subprocess.run(
+            ['gh', 'search', 'prs', '--review-requested=@me', '--state=open', '--json', 'number'],
+            capture_output=True,
+            text=True
+        )
+        
+        if result.returncode != 0:
+            return -1
+        
+        prs = json.loads(result.stdout)
+        return len(prs)
+    except (json.JSONDecodeError, FileNotFoundError, Exception):
+        return -1
+
+
+def get_github_unread_notifications() -> int:
+    """Get the number of unread notifications on GitHub."""
+    if shutil.which('gh') is None:
+        return -1
+    
+    try:
+        result = subprocess.run(
+            ['gh', 'api', 'notifications'],
+            capture_output=True,
+            text=True
+        )
+        
+        if result.returncode != 0:
+            return -1
+        
+        notifications = json.loads(result.stdout)
+        return len(notifications)
+    except (json.JSONDecodeError, FileNotFoundError, Exception):
+        return -1
+
+
 def show_menu():
     """Display the main menu."""
     clear_screen()
@@ -462,6 +528,18 @@ def show_menu():
     print("  6. Open a repo in code editor")
     print("  7. Show docker container info")
     print("  8. Quit")
+    print("\n" + "~" * 60)
+    print(f"\n{get_time_greeting()}")
+    
+    review_count = get_github_review_requests()
+    if review_count >= 0:
+        plural_s = "" if review_count == 1 else "s"
+        print(f"You have {ORANGE}{review_count}{RESET} review{plural_s} requested on GitHub")
+
+    unread_notifications = get_github_unread_notifications()
+    if unread_notifications >= 0:
+        plural_s = "" if unread_notifications == 1 else "s"
+        print(f"You have {ORANGE}{unread_notifications}{RESET} unread notification{plural_s} on GitHub")
     print("\n" + "~" * 60)
 
 
