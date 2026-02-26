@@ -6,11 +6,13 @@ Small terminal menu app for managing multiple Git repos from one place.
 
 ## What it does
 
+- Show number of open PRs with your review requested
+- Show number of unread github notifications
 - Show Git status across configured repos
 - Hard reset all repos to `main`
 - Stash + checkout all repos to `main`
 - Fuzzy search branch checkout per repo
-- Run `make restart` in the Haya parent repo
+- Run the make commands in Haysto-v2 repo
 - Open a repo in a selected code editor
 - Show Docker container overview + one-key cleanup actions
 
@@ -21,33 +23,13 @@ Small terminal menu app for managing multiple Git repos from one place.
 ### Required
 
 - Python 3.8+
-- Git
 
 ### Feature-dependent
 
 - `fzf` (for branch picker in option 4)
 - Docker CLI + running daemon (for option 7)
 - Editor CLIs you want to use (`kitty`, `code`, `zed`, etc.)
-
-### Install examples
-
-#### macOS (Homebrew)
-
-```bash
-brew install git fzf
-# optional
-brew install --cask docker
-brew install --cask visual-studio-code zed kitty
-```
-
-#### Ubuntu/Debian
-
-```bash
-sudo apt update
-sudo apt install -y git fzf python3
-# optional
-sudo apt install -y docker.io
-```
+- Github CLI installed and logged in
 
 ---
 
