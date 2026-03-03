@@ -14,8 +14,10 @@ import termios
 import datetime
 import getpass
 import json
+import threading
+import time
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 
 # Repository paths 
@@ -39,8 +41,77 @@ ORANGE = '\033[38;5;208m'
 RED = '\033[91m'
 GREEN = '\033[92m'
 YELLOW = '\033[93m'
+DIM = '\033[2m'
 RESET = '\033[0m'
 
+# ---------------------------------------------------------------------------
+# Background data cache
+# Fetches GitHub and calendar info in background threads so the menu never
+# blocks waiting for network / subprocess calls.
+# ---------------------------------------------------------------------------
+_LOADING = object()   # sentinel: fetch not yet complete
+_CACHE_TTL = 60       # seconds before a cached value is considered stale
+_show_notifications: bool = False  # toggled by option 8
+
+_cache: dict = {
+    'review_count':       _LOADING,
+    'notification_count': _LOADING,
+    'calendar_events':    _LOADING,
+    'fetched_at':         0.0,
+    'is_fetching':        False,
+}
+_cache_lock = threading.Lock()
+
+
+def _run_cache_fetch() -> None:
+    """Fetch all dashboard data concurrently and write results into the cache."""
+    with _cache_lock:
+        if _cache['is_fetching']:
+            return
+        _cache['is_fetching'] = True
+
+    results: dict = {}
+
+    def _reviews():
+        results['review_count'] = get_github_review_requests()
+
+    def _notifications():
+        results['notification_count'] = get_github_unread_notifications()
+
+    def _calendar():
+        results['calendar_events'] = get_todays_calendar_events()
+
+    try:
+        threads = [
+            threading.Thread(target=_reviews, daemon=True),
+            threading.Thread(target=_notifications, daemon=True),
+            threading.Thread(target=_calendar, daemon=True),
+        ]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+        with _cache_lock:
+            _cache.update(results)
+            _cache['fetched_at'] = time.monotonic()
+    finally:
+        with _cache_lock:
+            _cache['is_fetching'] = False
+
+
+def refresh_cache_in_background(force: bool = False) -> None:
+    """Kick off a background refresh unless one is already running or data is fresh."""
+    with _cache_lock:
+        age = time.monotonic() - _cache['fetched_at']
+        if not force and _cache['fetched_at'] > 0 and age < _CACHE_TTL:
+            return
+        if _cache['is_fetching']:
+            return
+
+    threading.Thread(target=_run_cache_fetch, daemon=True).start()
+
+# You can add other code editors here, just write a function to open your editor.
 EDITOR_MENU_OPTIONS = [
     {
         'key': '1',
@@ -58,7 +129,7 @@ EDITOR_MENU_OPTIONS = [
         'function_name': 'open_repo_in_zed',
     },
 ]
-
+# You can add other cli commands here, use letters if you run out of numbers!
 MAKE_COMMANDS = [
     {'key': '1', 'label': 'Restart docker containers, manage node modules', 'command': 'make restart'},
     {'key': '2', 'label': 'Rebuild containers and app', 'command': 'make init'},
@@ -484,6 +555,44 @@ def get_github_unread_notifications() -> int:
         return -1
 
 
+def get_todays_calendar_events() -> List[str]:
+    """Get today's calendar events using icalBuddy.
+
+    Requires: brew install ical-buddy and the uuid of your calendar(s)
+    Returns a list of output lines, or an empty list if unavailable / no events.
+    """
+    if shutil.which('icalBuddy') is None:
+        return []
+
+    try:
+        result = subprocess.run(
+            [
+                'icalBuddy',
+                '-b', '• ',        # bullet prefix for each event
+                '-iep', 'title,datetime',  # show only title and time
+                '-n',               # from now on 
+                '-nc',              # no calendar names
+                '-ic', # include following calendars. Comma separated. Get uuid using `icalBuddy calendars`
+                '3E7B91E3-B0EE-4A63-8856-3FED7A55F71D',
+                'eventsToday',
+            ],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+
+        if result.returncode != 0:
+            return []
+
+        output = result.stdout.strip()
+        if not output or 'No items.' in output:
+            return []
+
+        return [line for line in output.splitlines() if line.strip()]
+    except (FileNotFoundError, subprocess.TimeoutExpired, Exception):
+        return []
+
+
 def show_menu():
     """Display the main menu."""
     clear_screen()
@@ -520,6 +629,7 @@ def show_menu():
     print(f"                ✨Haya Repositories Manager✨")
     print("~" * 60)
     print("\nOptions:")
+    notifications_label = "Hide notifications" if _show_notifications else "Show notifications"
     print("  1. Show git status of all repos")
     print("  2. Hard reset all to main")
     print("  3. Stash changes and checkout all to main")
@@ -527,19 +637,33 @@ def show_menu():
     print("  5. Run make command")
     print("  6. Open a repo in code editor")
     print("  7. Show docker container info")
-    print("  8. Quit")
+    print(f"  8. {notifications_label}")
+    print("  9. Quit")
     print("\n" + "~" * 60)
     print(f"\n{get_time_greeting()}")
-    
-    review_count = get_github_review_requests()
-    if review_count >= 0:
-        plural_s = "" if review_count == 1 else "s"
-        print(f"You have {ORANGE}{review_count}{RESET} review{plural_s} requested on GitHub")
 
-    unread_notifications = get_github_unread_notifications()
-    if unread_notifications >= 0:
-        plural_s = "" if unread_notifications == 1 else "s"
-        print(f"You have {ORANGE}{unread_notifications}{RESET} unread notification{plural_s} on GitHub")
+    if _show_notifications:
+        # Trigger a background refresh if data is stale (non-blocking)
+        refresh_cache_in_background()
+
+        with _cache_lock:
+            review_count       = _cache['review_count']
+            notification_count = _cache['notification_count']
+            calendar_events    = _cache['calendar_events']
+
+        if review_count is not _LOADING and review_count >= 0:
+            plural_s = "" if review_count == 1 else "s"
+            print(f"You have {ORANGE}{review_count}{RESET} review{plural_s} requested on GitHub")
+
+        if notification_count is not _LOADING and notification_count >= 0:
+            plural_s = "" if notification_count == 1 else "s"
+            print(f"You have {ORANGE}{notification_count}{RESET} unread notification{plural_s} on GitHub")
+
+        if calendar_events and calendar_events is not _LOADING:
+            print(f"\n{ORANGE}Today's calendar:{RESET}")
+            for line in calendar_events:
+                print(line)
+
     print("\n" + "~" * 60)
 
 
@@ -746,8 +870,8 @@ def option_4_checkout_branches():
     print("~" * 60)
     print(f"  {ORANGE}CHECKOUT SPECIFIC BRANCHES{RESET}")
     print("~" * 60)
-    print("\nThis will open an fzf branch picker for each repository.")
-    print("Press Esc in fzf to stay on the current branch and skip checkout.")
+    print("\nFuzzy search fzf branch picker for each repository.")
+    print("Press Esc to stay on the current branch and skip checkout.")
     print("Aborts if any repository has uncommitted changes.")
     print()
 
@@ -816,7 +940,7 @@ def option_4_checkout_branches():
         if returncode == 0:
             print(f"    Current branch: {current_branch.strip()}")
         
-        print("  • Opening branch picker (Esc to skip)...")
+        print("")
         try:
             selected, branch_name = pick_branch_with_fzf(repo_path)
         except RuntimeError as e:
@@ -1122,10 +1246,11 @@ def main():
         show_menu()
         
         try:
-            print("\nSelect option (1-8 or q to quit): ", end='', flush=True)
+            print("\nSelect option (1-9 or q to quit): ", end='', flush=True)
             choice = get_single_char()
             print()  # New line after character is read
-            
+
+            global _show_notifications
             if choice == '1':
                 option_1_show_status()
             elif choice == '2':
@@ -1140,12 +1265,17 @@ def main():
                 option_6_open_in_code_editor()
             elif choice == '7':
                 option_7_show_docker_info()
-            elif choice == '8' or choice == 'q' or choice == 'Q' or choice == '\x1b':
+            elif choice == '8':
+                _show_notifications = not _show_notifications
+                if _show_notifications:
+                    # Block until data is loaded so the menu renders with values immediately
+                    _run_cache_fetch()
+            elif choice == '9' or choice == 'q' or choice == 'Q' or choice == '\x1b':
                 clear_screen()
                 print("Goodbye! 👋")
                 sys.exit(0)
             else:
-                print(f"\n{RED}✗ Invalid option. Please select 1-8.{RESET}")
+                print(f"\n{RED}✗ Invalid option. Please select 1-9.{RESET}")
                 wait_for_key()
         
         except KeyboardInterrupt:
