@@ -1,0 +1,25 @@
+git:
+  pagers:
+    - pager: delta --paging=never --line-numbers --hyperlinks --hyperlinks-file-link-format="lazygit-edit://{path}:{line}"
+  commitPrefixes:
+    haysto-v2: # This is repository folder name
+      - pattern: "^(?:\\w+\\/)?(V2P-\\d+)-.*"
+        replace: "$1 - "
+    haysto-v2-api:
+      - pattern: "^(?:\\w+\\/)?(V2P-\\d+)-.*"
+        replace: "$1 - "
+    haysto-v2-collect:
+      - pattern: "^(?:\\w+\\/)?(V2P-\\d+)-.*"
+        replace: "$1 - "
+    haysto-v2-create:
+      - pattern: "^(?:\\w+\\/)?(V2P-\\d+)-.*"
+        replace: "$1 - "
+    haysto-v2-collaborate:
+      - pattern: "^(?:\\w+\\/)?(V2P-\\d+)-.*"
+        replace: "$1 - "
+    haysto-v2-lib_shared:
+      - pattern: "^(?:\\w+\\/)?(V2P-\\d+)-.*"
+        replace: "$1 - "
+    enquiry-form:
+      - pattern: "^(?:\\w+\\/)?(V2P-\\d+)-.*"
+        replace: "$1 - "

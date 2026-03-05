@@ -17,6 +17,8 @@ brew "zsh-autosuggestions"
 brew "zsh-syntax-highlighting"
 brew "tree-sitter-cli"
 brew "prettier"
+brew "git-delta"
+brew "bat"
 
 # Casks (Required)
 cask "kitty"
