@@ -20,6 +20,13 @@ from pathlib import Path
 from typing import List, Optional, Tuple
 
 
+# Calendar UUIDs to include in the notifications panel.
+# Add multiple UUIDs as separate strings in the list.
+# Find yours by running: icalBuddy calendars
+ICAL_CALENDAR_IDS = [
+    '3E7B91E3-B0EE-4A63-8856-3FED7A55F71D',
+]
+
 # Repository paths 
 # Put haya parent repo first
 # Then sub repos and any other you wish to manage below.
@@ -229,6 +236,82 @@ def normalize_branch_selection(selected_branch: str) -> str:
     return branch
 
 
+def pick_source_branch_with_fzf(repo_path: Path, current_branch: str) -> Tuple[bool, str]:
+    """Open fzf branch picker pre-seeded with the current branch as the default query.
+
+    Returns:
+        (selected, branch_name)
+        - selected=False indicates skip/cancel (e.g. Esc pressed)
+    """
+    returncode, branches, stderr = run_git_command(
+        repo_path,
+        ['git', 'branch', '--all'],
+        show_output=False
+    )
+
+    if returncode != 0:
+        raise RuntimeError(stderr.strip() or "Failed to list branches")
+
+    branch_lines = [line for line in branches.splitlines() if 'HEAD' not in line]
+    if not branch_lines:
+        raise RuntimeError("No branches available")
+
+    try:
+        fzf_result = subprocess.run(
+            [
+                'fzf',
+                '--height', '40%',
+                '--reverse',
+                '--prompt', f'{repo_path.name}> ',
+                '--header', 'Select source branch (current branch pre-selected, Esc to skip)',
+                '--bind', 'esc:abort',
+                '--query', current_branch,
+            ],
+            input='\n'.join(branch_lines),
+            capture_output=True,
+            text=True,
+            cwd=repo_path
+        )
+    except FileNotFoundError as e:
+        raise RuntimeError("fzf not found. Please install fzf to use this option.") from e
+
+    if fzf_result.returncode != 0:
+        return False, ''
+
+    selected_line = fzf_result.stdout.strip()
+    if not selected_line:
+        return False, ''
+
+    branch_name = normalize_branch_selection(selected_line)
+    if not branch_name:
+        return False, ''
+
+    return True, branch_name
+
+
+def _input_with_default(prompt: str, default: str) -> str:
+    """Prompt for text input, pre-populating the buffer with *default*.
+
+    The user can edit or clear the pre-populated text.  Pressing Enter
+    immediately accepts the default.  Falls back to plain input() when
+    readline is unavailable.
+    """
+    try:
+        import readline
+
+        def _hook() -> None:
+            readline.insert_text(default)
+            readline.redisplay()
+
+        readline.set_pre_input_hook(_hook)
+        try:
+            return input(prompt)
+        finally:
+            readline.set_pre_input_hook(None)
+    except ImportError:
+        return input(prompt)
+
+
 def pick_branch_with_fzf(repo_path: Path) -> Tuple[bool, str]:
     """Open fzf branch picker for a repository.
 
@@ -391,6 +474,7 @@ def open_repo_in_kitty_tab(repo_path: Path) -> Tuple[int, str]:
         'kitty', '@', 'launch',
         '--type=tab',
         f'--cwd={repo_path}',
+        f'--tab-title= {repo_path.name}',
         '--copy-env',
         '--dont-take-focus',
         '--add-to-session',
@@ -437,9 +521,10 @@ def select_code_editor_launcher() -> Tuple[bool, str]:
     print("~" * 60)
     print(f"  {ORANGE}SELECT CODE EDITOR{RESET}")
     print("~" * 60)
-
+    print()
     for option in EDITOR_MENU_OPTIONS:
         print(f"  {option['key']}. {option['label']}")
+        print()
 
     print("\nPress number to select launcher")
     print("Press q or Esc to cancel")
@@ -573,7 +658,7 @@ def get_todays_calendar_events() -> List[str]:
                 '-n',               # from now on 
                 '-nc',              # no calendar names
                 '-ic', # include following calendars. Comma separated. Get uuid using `icalBuddy calendars`
-                '3E7B91E3-B0EE-4A63-8856-3FED7A55F71D',
+                ','.join(ICAL_CALENDAR_IDS),
                 'eventsToday',
             ],
             capture_output=True,
@@ -638,7 +723,7 @@ def show_menu():
     print("  6. Open a repo in code editor")
     print("  7. Show docker container info")
     print(f"  8. {notifications_label}")
-    print("  9. Quit")
+    print("  9. Create new branches and checkout")
     print("\n" + "~" * 60)
     print(f"\n{get_time_greeting()}")
 
@@ -1069,8 +1154,9 @@ def option_6_open_in_code_editor():
     # Display list of repos with numbers
     for i, repo_path in enumerate(REPO_PATHS, 1):
         status = "✓" if repo_path.exists() else "✗"
-        print(f"  {i}. {status} {repo_path.name}")
+        print(f"  {i}. {status} {ORANGE}{repo_path.name}{RESET}")
         print(f"      {repo_path}")
+        print()
     
     print("\n" + "~" * 60)
     
@@ -1232,6 +1318,144 @@ def option_7_show_docker_info():
             action_feedback = f"{YELLOW}⚠️  Invalid action. Use p/i/n/v/a, q, or Esc.{RESET}"
 
 
+def option_9_create_branches():
+    """
+    Option 9: Create new branches and checkout in all repositories.
+
+    For each repo:
+      - Skips if repo has uncommitted changes
+      - fzf picker for source branch (current branch pre-selected)
+      - Text input for new branch name (last created branch as default)
+      - Checks out source branch, creates and checks out new branch
+    """
+    clear_screen()
+    print("~" * 60)
+    print(f"  {ORANGE}CREATE NEW BRANCHES{RESET}")
+    print("~" * 60)
+    print("\nFor each repository:")
+    print("  • Select source branch with fuzzy finder (current branch pre-selected)")
+    print("  • Enter a name for the new branch")
+    print("  • Create and checkout the new branch from the source branch")
+    print("\nPress Esc at the branch picker to skip a repository.")
+    print()
+
+    if shutil.which('fzf') is None:
+        print(f"{RED}✗ fzf is not installed or not in PATH.{RESET}")
+        print(f"{YELLOW}Install fzf to use this option.{RESET}")
+        wait_for_key()
+        return
+
+    # summary entries: {'repo': str, 'status': 'created'|'skipped'|'error', 'detail': str}
+    summary: List[dict] = []
+    last_branch_name: Optional[str] = None
+
+    for repo_path in REPO_PATHS:
+        if not repo_path.exists():
+            summary.append({'repo': repo_path.name, 'status': 'skipped', 'detail': 'Repository not found'})
+            continue
+
+        print(f"\n📁 {repo_path.name}")
+        print("-" * 60)
+
+        # Check repo is clean
+        returncode, status_output, _ = run_git_command(
+            repo_path,
+            ['git', 'status', '--short'],
+            show_output=False
+        )
+        if returncode == 0 and status_output.strip():
+            print(f"  {YELLOW}⚠️  Skipping: repository has uncommitted changes{RESET}")
+            summary.append({'repo': repo_path.name, 'status': 'skipped', 'detail': 'Uncommitted changes'})
+            continue
+
+        # Get current branch
+        returncode, current_branch_raw, _ = run_git_command(
+            repo_path,
+            ['git', 'rev-parse', '--abbrev-ref', 'HEAD'],
+            show_output=False
+        )
+        current_branch = current_branch_raw.strip() if returncode == 0 else ''
+        if current_branch:
+            print(f"  Current branch: {ORANGE}{current_branch}{RESET}")
+
+        # Pick source branch with fzf (current branch pre-selected)
+        print("  Select source branch...")
+        try:
+            selected, source_branch = pick_source_branch_with_fzf(repo_path, current_branch)
+        except RuntimeError as e:
+            print(f"  {RED}✗ {e}{RESET}")
+            summary.append({'repo': repo_path.name, 'status': 'error', 'detail': str(e)})
+            continue
+
+        if not selected:
+            print(f"  {DIM}Skipped{RESET}")
+            summary.append({'repo': repo_path.name, 'status': 'skipped', 'detail': 'Skipped, no changes'})
+            continue
+
+        print(f"  Selected source branch: {ORANGE}{source_branch}{RESET}")
+        print()
+
+        # Ask for new branch name, defaulting to the last branch created this session
+        if last_branch_name:
+            new_branch_name = _input_with_default(
+                f"  New branch name [{last_branch_name}]: ",
+                last_branch_name
+            ).strip()
+            if not new_branch_name:
+                new_branch_name = last_branch_name
+        else:
+            new_branch_name = input("  New branch name: ").strip()
+
+        if not new_branch_name:
+            print(f"  {YELLOW}⚠️  Skipping: no branch name provided{RESET}")
+            summary.append({'repo': repo_path.name, 'status': 'skipped', 'detail': 'No branch name provided'})
+            continue
+
+        # Checkout source branch first
+        print(f"  • Checking out source branch '{source_branch}'...")
+        returncode, _, stderr = run_git_command(
+            repo_path,
+            ['git', 'checkout', source_branch],
+            show_output=False
+        )
+        if returncode != 0:
+            err = stderr.strip()
+            print(f"  {RED}✗ Failed to checkout source branch: {err}{RESET}")
+            summary.append({'repo': repo_path.name, 'status': 'error', 'detail': f'Failed to checkout {source_branch}: {err}'})
+            continue
+
+        # Create and checkout new branch
+        print(f"  • Creating and checking out '{new_branch_name}'...")
+        returncode, _, stderr = run_git_command(
+            repo_path,
+            ['git', 'checkout', '-b', new_branch_name],
+            show_output=False
+        )
+        if returncode != 0:
+            err = stderr.strip()
+            print(f"  {RED}✗ Failed to create branch: {err}{RESET}")
+            summary.append({'repo': repo_path.name, 'status': 'error', 'detail': f'Failed to create {new_branch_name}: {err}'})
+            continue
+
+        print(f"  {GREEN}✓ Created and checked out '{new_branch_name}' from '{source_branch}'{RESET}")
+        last_branch_name = new_branch_name
+        summary.append({'repo': repo_path.name, 'status': 'created', 'detail': f'{source_branch} → {new_branch_name}'})
+
+    # Summary
+    print("\n" + "~" * 60)
+    print(f"  {ORANGE}SUMMARY{RESET}")
+    print("~" * 60)
+    for entry in summary:
+        if entry['status'] == 'created':
+            print(f"  {GREEN}✓ {entry['repo']}{RESET}: {entry['detail']}")
+        elif entry['status'] == 'error':
+            print(f"  {RED}✗ {entry['repo']}{RESET}: {entry['detail']}")
+        else:
+            print(f"  {DIM}— {entry['repo']}{RESET}: {entry['detail']}")
+
+    wait_for_key()
+
+
 def main():
     """Main application loop."""
     # Validate repositories at startup
@@ -1246,7 +1470,7 @@ def main():
         show_menu()
         
         try:
-            print("\nSelect option (1-9 or q to quit): ", end='', flush=True)
+            print("\nSelect option (1-9, q to quit): ", end='', flush=True)
             choice = get_single_char()
             print()  # New line after character is read
 
@@ -1270,7 +1494,9 @@ def main():
                 if _show_notifications:
                     # Block until data is loaded so the menu renders with values immediately
                     _run_cache_fetch()
-            elif choice == '9' or choice == 'q' or choice == 'Q' or choice == '\x1b':
+            elif choice == '9':
+                option_9_create_branches()
+            elif choice == 'q' or choice == 'Q' or choice == '\x1b':
                 clear_screen()
                 print("Goodbye! 👋")
                 sys.exit(0)

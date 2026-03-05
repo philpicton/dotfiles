@@ -4,10 +4,13 @@
 
 Small terminal menu app for managing multiple Git repos from one place.
 
+Written in Python. Vibe coded with 🧡
+
 ## What it does
 
 - Show number of open PRs with your review requested
 - Show number of unread github notifications
+- Show the days upcoming calendar events (MacOS calendar)
 - Show Git status across configured repos
 - Hard reset all repos to `main`
 - Stash + checkout all repos to `main`
@@ -18,7 +21,7 @@ Small terminal menu app for managing multiple Git repos from one place.
 
 ---
 
-## Requirements
+## 1. Requirements
 
 ### Required
 
@@ -29,21 +32,29 @@ Small terminal menu app for managing multiple Git repos from one place.
 - `fzf` (for branch picker in option 4)
 - Docker CLI + running daemon (for option 7)
 - Editor CLIs you want to use (`kitty`, `code`, `zed`, etc.)
-- Github CLI installed and logged in
+- Github CLI (gh) installed and logged in (to show requested reviews and unread notifications)
+- `icalBuddy` installed (to show upcoming calendar events)
 
 ---
 
-## Configure repositories
+## 2. Configure repositories and notifications
 
 Edit the `REPOS` list in:
 
 - [./repo-man.py](./repo-man.py)
 
-Use absolute paths or `~` paths.
+Add in what repos you want to manage, with their paths on your system. Use absolute paths or `~` paths.
+
+Get the uuid of your work calendar and place it in the ICAL_CALENDAR_IDS const near line 28.
+
+```bash
+# lists your mac calendars
+icalbuddy calendars
+```
 
 ---
 
-## Make it executable
+## 3. Make it executable
 
 ```bash
 chmod +x repo-man.py
@@ -63,15 +74,17 @@ python3 repo-man.py
 
 ---
 
-## Optional shell alias
+## 4. Optional shell alias
 
-Add to your shell config:
+Add to your shell config (`.zshrc` etc):
 
 ```bash
 alias haya='python3 ~/repo-man.py'
 ```
 
 Adjust the path to match your local location.
+
+Then type 'haya' to launch.
 
 ---
 
