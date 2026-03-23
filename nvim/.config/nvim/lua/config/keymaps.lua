@@ -25,7 +25,9 @@ vim.keymap.set({ "n", "v" }, "<C-S-Up>", ":MoveLine(-1)<CR>", { desc = "Move lin
 -- Git diff pick left or right
 vim.keymap.set("n", "<leader>g2", ":diffget //2<cr>", { desc = "diff get //2" })
 vim.keymap.set("n", "<leader>g3", ":diffget //3<cr>", { desc = "diff get //3" })
--- vim.keymap.set("n", "<leader>gd", ":Gvdiffsplit!`<cr>", { desc = "3 way diff split" })
+
+-- Toggle inline Git blame
+vim.keymap.set("n", "<leader>gi", ":GitBlameToggle<cr>", { desc = "Toggle inline Git blame" })
 
 -- Lazydocker
 vim.keymap.set("n", "<leader>k", function()
