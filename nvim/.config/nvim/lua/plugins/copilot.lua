@@ -12,6 +12,15 @@ return {
           vim.lsp.inline_completion.enable(state)
         end,
       }):map("<leader>ac")
+      Snacks.toggle({
+        name = "Copilot NES",
+        get = function()
+          return require("sidekick.nes").enabled
+        end,
+        set = function(state)
+          require("sidekick.nes").enable(state)
+        end,
+      }):map("<leader>an")
     end,
   },
 
@@ -21,7 +30,8 @@ return {
     optional = true,
     event = "VeryLazy",
     opts = function(_, opts)
-      local icon = LazyVim.config.icons.kinds.Copilot
+      -- local icon = LazyVim.config.icons.kinds.Copilot
+      local icon = " 󰚩 "
 
       -- Remove the existing Copilot component added by copilot-native
       for i = #opts.sections.lualine_x, 1, -1 do
