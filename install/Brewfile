@@ -19,6 +19,9 @@ brew "tree-sitter-cli"
 brew "prettier"
 brew "git-delta"
 brew "bat"
+brew "ghostscript"
+brew "imagemagick"
+brew "mermaid-cli"
 
 # Casks (Required)
 cask "kitty"
@@ -35,6 +38,7 @@ cask "slack"
 cask "mysqlworkbench"
 cask "postman"
 cask "1password"
+cask "tableplus"
 
 # Optional Formulae & Casks
 tap "felixkratz/formulae"
