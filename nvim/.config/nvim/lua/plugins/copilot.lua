@@ -11,7 +11,7 @@ return {
         set = function(state)
           vim.lsp.inline_completion.enable(state)
         end,
-      }):map("<leader>ux")
+      }):map("<leader>ac")
     end,
   },
 
@@ -35,7 +35,7 @@ return {
         end
       end
 
-      -- Add our custom Copilot status component that shows disabled state
+      -- Add custom Copilot status component that shows disabled state
       table.insert(opts.sections.lualine_x, 2, {
         function()
           return icon
