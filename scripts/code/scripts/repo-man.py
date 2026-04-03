@@ -1047,6 +1047,17 @@ def option_4_checkout_branches():
             print(f"    {RED}✗ Error: {stderr}{RESET}")
         else:
             print(f"    {GREEN}✓ Successfully checked out '{branch_name}'{RESET}")
+            # Pull latest changes on the newly checked-out branch
+            print(f"  • Pulling latest changes...")
+            returncode, _, stderr = run_git_command(
+                repo_path,
+                ['git', 'pull'],
+                show_output=False
+            )
+            if returncode != 0:
+                print(f"    {RED}✗ Error pulling: {stderr}{RESET}")
+            else:
+                print(f"    {GREEN}✓ Pulled latest changes{RESET}")
     
     print("\n" + "~" * 60)
     print(f"{GREEN}✓ Branch checkout complete{RESET}")
