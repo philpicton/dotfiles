@@ -104,6 +104,10 @@ fi
 autoload -Uz compinit
 compinit
 
+# php homebrew path
+export PATH="/opt/homebrew/opt/php@8.3/bin:$PATH"
+export PATH="/opt/homebrew/opt/php@8.3/sbin:$PATH"
+
 # zsh plugins
 if [[ -n "$BREW_PREFIX" ]]; then
     [ -f "$BREW_PREFIX/share/zsh-autosuggestions/zsh-autosuggestions.zsh" ] && \
@@ -113,6 +117,3 @@ if [[ -n "$BREW_PREFIX" ]]; then
         source "$BREW_PREFIX/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
 fi
 
-# php homebrew path
-export PATH="/opt/homebrew/opt/php@8.3/bin:$PATH"
-export PATH="/opt/homebrew/opt/php@8.3/sbin:$PATH"

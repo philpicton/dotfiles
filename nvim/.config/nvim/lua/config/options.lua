@@ -9,3 +9,4 @@
 -- vim.o.shiftwidth = 4 -- Number of spaces inserted when indenting
 
 vim.g.ai_cmp = true
+vim.g.lazyvim_php_lsp = "intelephense"
