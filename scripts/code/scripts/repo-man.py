@@ -145,6 +145,7 @@ MAKE_COMMANDS = [
     {'key': '5', 'label': 'Update permissions', 'command': 'make update_permissions'},
     {'key': '6', 'label': 'Bulk seed cases', 'command': 'make cases'},
     {'key': '7', 'label': 'Seed a case at a particular stage', 'command': 'make case'},
+    {'key': '8', 'label': 'Shell into haysto-v2-api container', 'command': 'docker compose exec haysto-api bash'},
 ]
 
 def clear_screen():
