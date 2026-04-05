@@ -22,6 +22,7 @@ brew "bat"
 brew "ghostscript"
 brew "imagemagick"
 brew "mermaid-cli"
+brew "poppler"
 
 # Casks (Required)
 cask "kitty"
@@ -41,6 +42,8 @@ cask "1password"
 cask "tableplus"
 
 # Optional Formulae & Casks
+brew "php"
+brew "composer"
 tap "felixkratz/formulae"
 brew "sketchybar"
 tap "nikitabobko/tap"
