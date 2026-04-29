@@ -17,8 +17,9 @@ import json
 import threading
 import time
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 
+# CUSTOMISE THE BELOW VALUES ------------------------------------------------
 
 # Calendar UUIDs to include in the notifications panel.
 # Add multiple UUIDs as separate strings in the list.
@@ -27,21 +28,35 @@ ICAL_CALENDAR_IDS = [
     '3E7B91E3-B0EE-4A63-8856-3FED7A55F71D',
 ]
 
-# Repository paths 
-# Put haya parent repo first
-# Then sub repos and any other you wish to manage below.
-# Customise the paths to your local setup 
+# The folder where you store the repos, and any worktrees created by this script. 
+# Customise this to your preferred location.
+ROOTDIR = "~/code/haya"
+
+# Main Repository folder names relative to ROOTDIR. 
+# haysto-v2 must be first, and be found at ROOTDIR/haysto-v2 for the script to work correctly. 
+# add any others you want to manage at the end.
 REPOS = [
-    "~/code/haysto-v2",
-    "~/code/haysto-v2/haysto-v2-api",
-    "~/code/haysto-v2/haysto-v2-collect",
-    "~/code/haysto-v2/haysto-v2-create",
-    "~/code/haysto-v2/lib/js/haysto-v2-lib_shared",
-    "~/code/enquiry-form",
+    "haysto-v2",
+    "haysto-v2/haysto-v2-api",
+    "haysto-v2/haysto-v2-collect",
+    "haysto-v2/haysto-v2-create",
+    "haysto-v2/lib/js/haysto-v2-lib_shared",
+    "enquiry-form",
 ]
+# ---------------------------------------------------------------------------
 
 # Expand paths and convert to absolute paths
-REPO_PATHS = [Path(repo).expanduser().resolve() for repo in REPOS]
+ROOT_PATH = Path(ROOTDIR).expanduser().resolve()
+REPO_RELATIVE_PATHS = [Path(repo) for repo in REPOS]
+REPO_PATHS = [(ROOT_PATH / repo).resolve() for repo in REPO_RELATIVE_PATHS]
+
+# Worktree group state
+MAIN_WORKTREE_GROUP = 'main'
+MAIN_WORKTREE_FOLDER_NAME = 'haysto-v2'
+RESERVED_WORKTREE_GROUP_NAMES = {MAIN_WORKTREE_GROUP, MAIN_WORKTREE_FOLDER_NAME}
+WORKTREE_STATE_FILE = ROOT_PATH / '.repo-man-worktrees.json'
+_active_worktree_group: str = MAIN_WORKTREE_GROUP
+_startup_notice: Optional[str] = None
 
 # ANSI color codes for terminal output
 ORANGE = '\033[38;5;208m'
@@ -390,6 +405,266 @@ def run_command(command: List[str]) -> Tuple[int, str, str]:
         return 1, "", str(e)
 
 
+def run_command_in_dir(command: List[str], cwd: Path) -> Tuple[int, str, str]:
+    """Run a command in a specific directory and capture output."""
+    try:
+        result = subprocess.run(command, cwd=cwd, capture_output=True, text=True)
+        return result.returncode, result.stdout, result.stderr
+    except Exception as e:
+        return 1, "", str(e)
+
+
+def get_repo_paths_for_group(group_name: str) -> List[Path]:
+    """Return repository paths for a worktree group."""
+    if group_name == MAIN_WORKTREE_GROUP:
+        return REPO_PATHS
+    group_root = ROOT_PATH / group_name
+    return [(group_root / repo).resolve() for repo in REPO_RELATIVE_PATHS]
+
+
+def get_active_repo_paths() -> List[Path]:
+    """Return repository paths for the currently active worktree group."""
+    return get_repo_paths_for_group(_active_worktree_group)
+
+
+def get_parent_repo_path_for_group(group_name: str) -> Path:
+    """Return the parent repo path used for make/docker actions for a group."""
+    return get_repo_paths_for_group(group_name)[0]
+
+
+def get_active_parent_repo_path() -> Path:
+    """Return the parent repo path used for make/docker actions for active group."""
+    return get_parent_repo_path_for_group(_active_worktree_group)
+
+
+def validate_worktree_group_name(name: str) -> Tuple[bool, str]:
+    """Validate a worktree group folder name for macOS/Linux-safe usage."""
+    if not name:
+        return False, "Group name cannot be empty"
+    if name in RESERVED_WORKTREE_GROUP_NAMES:
+        return False, "Group name is reserved"
+    if name in ('.', '..'):
+        return False, "Group name is invalid"
+    if '/' in name or '\\' in name:
+        return False, "Group name cannot contain path separators"
+
+    for ch in name:
+        if not (ch.isalnum() or ch in ('-', '_', '.')):
+            return False, "Use only letters, numbers, dash, underscore, or dot"
+
+    return True, ""
+
+
+def get_worktree_paths_for_repo(canonical_repo_path: Path) -> Tuple[bool, Set[Path], str]:
+    """Return all known worktree paths for a canonical repository."""
+    if not canonical_repo_path.exists():
+        return False, set(), f"Canonical repo missing: {canonical_repo_path}"
+
+    returncode, stdout, stderr = run_command_in_dir(
+        ['git', 'worktree', 'list', '--porcelain'],
+        canonical_repo_path
+    )
+    if returncode != 0:
+        err = (stderr or stdout or '').strip()
+        return False, set(), err or 'Failed to list git worktrees'
+
+    worktrees: Set[Path] = set()
+    for line in stdout.splitlines():
+        if line.startswith('worktree '):
+            wt_path = line[len('worktree '):].strip()
+            if wt_path:
+                worktrees.add(Path(wt_path).expanduser().resolve())
+
+    return True, worktrees, ''
+
+
+def validate_worktree_group(group_name: str) -> Tuple[bool, str]:
+    """Strictly validate that a group contains all expected repo worktrees."""
+    if group_name == MAIN_WORKTREE_GROUP:
+        return True, ''
+
+    group_root = ROOT_PATH / group_name
+    if not group_root.exists() or not group_root.is_dir():
+        return False, f"{group_name}: group folder is missing"
+
+    for repo_rel in REPO_RELATIVE_PATHS:
+        canonical_repo = (ROOT_PATH / repo_rel).resolve()
+        target_repo = (group_root / repo_rel).resolve()
+
+        if not target_repo.exists():
+            return False, f"{group_name}: missing {repo_rel}"
+        if not (target_repo / '.git').exists():
+            return False, f"{group_name}: {repo_rel} is not a git worktree folder"
+
+        ok, paths, err = get_worktree_paths_for_repo(canonical_repo)
+        if not ok:
+            return False, f"{group_name}: {repo_rel} worktree check failed ({err})"
+        if target_repo not in paths:
+            return False, f"{group_name}: {repo_rel} is not registered as a worktree"
+
+    return True, ''
+
+
+def discover_worktree_groups() -> Tuple[List[str], Dict[str, str]]:
+    """Discover strict-valid worktree groups and invalid candidates under ROOTDIR."""
+    valid_groups: List[str] = [MAIN_WORKTREE_GROUP]
+    invalid_groups: Dict[str, str] = {}
+
+    if not ROOT_PATH.exists() or not ROOT_PATH.is_dir():
+        return valid_groups, invalid_groups
+
+    top_level_repo_roots = {repo.parts[0] for repo in REPO_RELATIVE_PATHS if repo.parts}
+
+    for child in ROOT_PATH.iterdir():
+        if not child.is_dir():
+            continue
+
+        name = child.name
+        if name in top_level_repo_roots:
+            continue
+        if name.startswith('.'):
+            continue
+        # Skip directories whose names couldn't be group names (e.g. node_modules)
+        name_ok, _ = validate_worktree_group_name(name)
+        if not name_ok:
+            continue
+
+        is_valid, reason = validate_worktree_group(name)
+        if is_valid:
+            valid_groups.append(name)
+        else:
+            invalid_groups[name] = reason
+
+    valid_groups = [MAIN_WORKTREE_GROUP] + sorted(
+        [group for group in valid_groups if group != MAIN_WORKTREE_GROUP]
+    )
+    return valid_groups, invalid_groups
+
+
+def save_active_worktree_group(group_name: str) -> None:
+    """Persist active worktree group to disk."""
+    try:
+        WORKTREE_STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
+        WORKTREE_STATE_FILE.write_text(
+            json.dumps({'active_group': group_name}, indent=2),
+            encoding='utf-8'
+        )
+    except Exception:
+        # Non-fatal. State persistence should not break the TUI.
+        pass
+
+
+def load_active_worktree_group() -> str:
+    """Load persisted active worktree group from disk."""
+    if not WORKTREE_STATE_FILE.exists():
+        return MAIN_WORKTREE_GROUP
+
+    try:
+        data = json.loads(WORKTREE_STATE_FILE.read_text(encoding='utf-8'))
+        group_name = str(data.get('active_group', MAIN_WORKTREE_GROUP))
+        return group_name
+    except Exception:
+        return MAIN_WORKTREE_GROUP
+
+
+def get_group_with_running_docker_stack(groups: List[str]) -> Optional[str]:
+    """Best-effort detection of a group with running compose services."""
+    if shutil.which('docker') is None:
+        return None
+
+    for group in groups:
+        repo_root = get_parent_repo_path_for_group(group)
+        if not repo_root.exists():
+            continue
+
+        returncode, stdout, _ = run_command_in_dir(
+            ['docker', 'compose', 'ps', '-q'],
+            repo_root
+        )
+        if returncode == 0 and stdout.strip():
+            return group
+
+    return None
+
+
+def initialise_active_worktree_group() -> None:
+    """Load and validate active worktree group from state, then notify on mismatch."""
+    global _active_worktree_group
+    global _startup_notice
+
+    persisted = load_active_worktree_group()
+    valid_groups, _ = discover_worktree_groups()
+
+    if persisted in valid_groups:
+        _active_worktree_group = persisted
+    else:
+        _active_worktree_group = MAIN_WORKTREE_GROUP
+        if persisted != MAIN_WORKTREE_GROUP:
+            _startup_notice = (
+                f"{YELLOW}⚠️  Saved worktree group '{persisted}' is no longer valid. "
+                f"Falling back to '{MAIN_WORKTREE_GROUP}'.{RESET}"
+            )
+        save_active_worktree_group(_active_worktree_group)
+
+    running_group = get_group_with_running_docker_stack(valid_groups)
+    if running_group and running_group != _active_worktree_group:
+        mismatch = (
+            f"{YELLOW}⚠️  Docker appears active for group '{running_group}', "
+            f"but repo-man is set to '{_active_worktree_group}'.{RESET}"
+        )
+        if _startup_notice:
+            _startup_notice = f"{_startup_notice}\n{mismatch}"
+        else:
+            _startup_notice = mismatch
+
+
+def run_docker_stack_down(repo_root: Path) -> Tuple[bool, str]:
+    """Bring docker compose stack down for a repository root."""
+    if shutil.which('docker') is None:
+        return False, 'Docker CLI not found'
+    if not repo_root.exists():
+        return False, f'Repo root not found: {repo_root}'
+
+    returncode, stdout, stderr = run_command_in_dir(['docker', 'compose', 'down'], repo_root)
+    if returncode != 0:
+        return False, (stderr or stdout or 'docker compose down failed').strip()
+    return True, (stdout or 'docker compose down complete').strip()
+
+
+def run_docker_stack_up(repo_root: Path) -> Tuple[bool, str]:
+    """Bring docker compose stack up for a repository root."""
+    if shutil.which('docker') is None:
+        return False, 'Docker CLI not found'
+    if not repo_root.exists():
+        return False, f'Repo root not found: {repo_root}'
+
+    returncode, stdout, stderr = run_command_in_dir(['docker', 'compose', 'up', '-d'], repo_root)
+    if returncode != 0:
+        return False, (stderr or stdout or 'docker compose up -d failed').strip()
+    return True, (stdout or 'docker compose up -d complete').strip()
+
+
+def set_active_worktree_group(target_group: str) -> List[str]:
+    """Switch active group, docker down/up with warning-only behavior."""
+    global _active_worktree_group
+    warnings: List[str] = []
+
+    current_root = get_active_parent_repo_path()
+    ok, message = run_docker_stack_down(current_root)
+    if not ok:
+        warnings.append(f"Failed to bring docker down for current group: {message}")
+
+    _active_worktree_group = target_group
+    save_active_worktree_group(target_group)
+
+    target_root = get_active_parent_repo_path()
+    ok, message = run_docker_stack_up(target_root)
+    if not ok:
+        warnings.append(f"Failed to bring docker up for new group: {message}")
+
+    return warnings
+
+
 def truncate_value(value: str, width: int) -> str:
     """Truncate value to a fixed width using an ellipsis when needed."""
     text = (value or '-').replace('\n', ' ').strip()
@@ -681,6 +956,8 @@ def get_todays_calendar_events() -> List[str]:
 
 def show_menu():
     """Display the main menu."""
+    global _startup_notice
+
     clear_screen()
     ascii_art = """                                           
                                 ↑↑↑↑↑↑                
@@ -725,8 +1002,17 @@ def show_menu():
     print("  7. Show docker container info")
     print(f"  8. {notifications_label}")
     print("  9. Create new branches and checkout")
+    print("  w. Worktrees")
     print("\n" + "~" * 60)
     print(f"\n{get_time_greeting()}")
+
+    groups, _ = discover_worktree_groups()
+    if len(groups) > 1:
+        print(f"Active worktree group: {ORANGE}{_active_worktree_group}{RESET}")
+
+    if _startup_notice:
+        print(_startup_notice)
+        _startup_notice = None
 
     if _show_notifications:
         # Trigger a background refresh if data is stale (non-blocking)
@@ -761,7 +1047,9 @@ def option_1_show_status():
     print("~" * 60)
     print()
     
-    for repo_path in REPO_PATHS:
+    repo_paths = get_active_repo_paths()
+
+    for repo_path in repo_paths:
         if not repo_path.exists():
             print(f"\n📁 {repo_path.name}")
             print(f"   {RED}✗ Repository not found{RESET}")
@@ -826,7 +1114,9 @@ def option_2_reset_to_main():
     print(f"  {ORANGE}RESETTING REPOSITORIES...{RESET}")
     print("~" * 60)
     
-    for repo_path in REPO_PATHS:
+    repo_paths = get_active_repo_paths()
+
+    for repo_path in repo_paths:
         if not repo_path.exists():
             print(f"\n{RED}✗ {repo_path.name}: Repository not found{RESET}")
             continue
@@ -892,7 +1182,9 @@ def option_3_stash_to_main():
     print(f"  {ORANGE}STASHING AND SWITCHING TO MAIN...{RESET}")
     print("~" * 60)
     
-    for repo_path in REPO_PATHS:
+    repo_paths = get_active_repo_paths()
+
+    for repo_path in repo_paths:
         if not repo_path.exists():
             print(f"\n{RED}✗ {repo_path.name}: Repository not found{RESET}")
             continue
@@ -971,7 +1263,9 @@ def option_4_checkout_branches():
     all_clean = True
     dirty_repos = []
     
-    for repo_path in REPO_PATHS:
+    repo_paths = get_active_repo_paths()
+
+    for repo_path in repo_paths:
         if not repo_path.exists():
             continue
             
@@ -996,7 +1290,7 @@ def option_4_checkout_branches():
     
     print(f"{GREEN}✓ All repositories are clean. Proceeding...{RESET}\n")
     
-    for repo_path in REPO_PATHS:
+    for repo_path in repo_paths:
         if not repo_path.exists():
             print(f"\n{RED}✗ {repo_path.name}: Repository not found{RESET}")
             continue
@@ -1076,7 +1370,7 @@ def option_5_run_make_command():
     print("~" * 60)
     print()
     
-    parent_repo = REPO_PATHS[0]  # ~/code/haysto-v2
+    parent_repo = get_active_parent_repo_path()
     
     if not parent_repo.exists():
         print(f"{RED}✗ Parent repository not found: {parent_repo}{RESET}")
@@ -1163,8 +1457,10 @@ def option_6_open_in_code_editor():
     
 
     
+    repo_paths = get_active_repo_paths()
+
     # Display list of repos with numbers
-    for i, repo_path in enumerate(REPO_PATHS, 1):
+    for i, repo_path in enumerate(repo_paths, 1):
         status = "✓" if repo_path.exists() else "✗"
         print(f"  {i}. {status} {ORANGE}{repo_path.name}{RESET}")
         print(f"      {repo_path}")
@@ -1174,7 +1470,7 @@ def option_6_open_in_code_editor():
     
     # Get user selection (single key, no Enter)
     try:
-        print(f"\nSelect repository (1-{len(REPO_PATHS)}, q, Esc): ", end='', flush=True)
+        print(f"\nSelect repository (1-{len(repo_paths)}, q, Esc): ", end='', flush=True)
 
         while True:
             choice = get_single_char()
@@ -1188,13 +1484,13 @@ def option_6_open_in_code_editor():
 
             if choice.isdigit():
                 repo_num = int(choice)
-                if 1 <= repo_num <= len(REPO_PATHS):
+                if 1 <= repo_num <= len(repo_paths):
                     break
 
-            print(f"{RED}✗ Invalid selection. Please choose 1-{len(REPO_PATHS)}, q, or Esc.{RESET}")
-            print(f"Select repository (1-{len(REPO_PATHS)}, q, Esc): ", end='', flush=True)
+            print(f"{RED}✗ Invalid selection. Please choose 1-{len(repo_paths)}, q, or Esc.{RESET}")
+            print(f"Select repository (1-{len(repo_paths)}, q, Esc): ", end='', flush=True)
 
-        selected_repo = REPO_PATHS[repo_num - 1]
+        selected_repo = repo_paths[repo_num - 1]
         
         if not selected_repo.exists():
             print(f"\n{RED}✗ Repository does not exist: {selected_repo}{RESET}")
@@ -1361,7 +1657,9 @@ def option_9_create_branches():
     summary: List[dict] = []
     last_branch_name: Optional[str] = None
 
-    for repo_path in REPO_PATHS:
+    repo_paths = get_active_repo_paths()
+
+    for repo_path in repo_paths:
         if not repo_path.exists():
             summary.append({'repo': repo_path.name, 'status': 'skipped', 'detail': 'Repository not found'})
             continue
@@ -1468,6 +1766,589 @@ def option_9_create_branches():
     wait_for_key()
 
 
+def show_worktrees_help() -> None:
+    """Show a short help page for worktree group behavior in repo-man."""
+    clear_screen()
+    print("~" * 60)
+    print(f"  {ORANGE}WORKTREES HELP{RESET}")
+    print("~" * 60)
+    print()
+    print("Git worktrees enable one repository to have multiple folders. But share git history.")
+    print("You can have multiple branches of the same repo checked out at the same")
+    print("time in different folders. So you can test a PR without affecting your work")
+    print("in progress, or work on multiple features simultaneously, like hotfixes 😅")
+    print()
+    print("Great, but when you have nested repos like ours, switching worktrees")
+    print("is not very convenient. But now we have repo-man™ to save the day!")
+    print("Repo-man treats a 'worktree group' as a full set of all configured repos.")
+    print("Each group has a name which corresponds to a folder at the root level.")   
+    print("The original group is always 'main'.")
+    print()
+    print("Layout:")
+    print(f"  {ROOT_PATH}/")
+    print("    haysto-v2/                (main group parent repo)")
+    print("    enquiry-form/")
+    print("    <group-name>/")
+    print("      haysto-v2/")
+    print("      enquiry-form/")
+    print()
+    print("What Repo-man does:")
+    print("  • Create group: ")
+    print("    Creates a new worktree group in a folder with the name you give it.")
+    print("    Then in the new worktrees, creates a new branch: `repo-man/<group>` from `main` branch")
+    print("    for each repo (you can't have the same branch checked out in multiple worktrees,")
+    print("    so we must create a new branch per repo for each group). Then sets upstream")
+    print("    to origin/main and pulls with --ff-only. Oh and copies over your gitignored files.")
+    print("    ⚠️ Avoid committing to the new branch and pushing! Create/checkout new branches.")
+    print()
+    print("  • Switch group: ")
+    print("    Docker compose down on current, then up on new group. Sets the working directory of")
+    print("    this app to use the new group's repos. ")
+    print()
+    print("  • Delete group: removes every worktree in that group and deletes the folder.")
+    print()
+    print("  • Cleanup group: removes stale/problematic worktrees for one group. ")
+    print("    Useful if you manually delete a group's folder or if something gets messed up.")
+    print()
+    print("Safety:")
+    print("  • You cannot create groups named 'main' or 'haysto-v2'")
+    print("  • You cannot delete the main group")
+    print("  • Cleanup cannot target 'main' or 'haysto-v2'")
+    print("  • Group names allow letters, numbers, dash, underscore, dot")
+    wait_for_key()
+
+
+def option_worktrees_list_groups() -> None:
+    """List valid and invalid worktree groups."""
+    clear_screen()
+    print("~" * 60)
+    print(f"  {ORANGE}WORKTREE GROUPS{RESET}")
+    print("~" * 60)
+    print()
+
+    groups, invalid = discover_worktree_groups()
+    for group in groups:
+        marker = ''
+        if group == MAIN_WORKTREE_GROUP:
+            marker = ' (main)'
+        if group == _active_worktree_group:
+            marker = f"{marker} (active)"
+        print(f"  {GREEN}✓ {group}{RESET}{marker}")
+
+    if invalid:
+        print(f"\n{YELLOW}Invalid candidates (not usable groups):{RESET}")
+        for name, reason in sorted(invalid.items()):
+            print(f"  {RED}✗ {name}{RESET}: {reason}")
+
+    wait_for_key()
+
+
+# Directories that are gitignored because they contain build artifacts, not config.
+# We do not copy these when seeding a new worktree.
+_ARTIFACT_DIR_PREFIXES = (
+    'node_modules/',
+    '.next/',
+    '.nuxt/',
+    '.output/',
+    'dist/',
+    'build/',
+    'out/',
+    '__pycache__/',
+    '.mypy_cache/',
+    '.pytest_cache/',
+    '.ruff_cache/',
+    '.venv/',
+    'venv/',
+    '.tox/',
+    'coverage/',
+    '.coverage',
+    'htmlcoverage/',
+    '.gradle/',
+    '.idea/',
+    '*.log',
+)
+
+
+def copy_gitignored_files(canonical_repo: Path, target_repo: Path) -> Tuple[int, List[str]]:
+    """
+    Copy gitignored files that exist in canonical_repo into the matching
+    relative location inside target_repo.  Large artifact directories are
+    excluded.  Returns (number_of_files_copied, list_of_error_strings).
+    """
+    result = subprocess.run(
+        ['git', 'ls-files', '--others', '--ignored', '--exclude-standard', '-z'],
+        cwd=canonical_repo,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        return 0, [f'git ls-files failed: {result.stderr.strip()}']
+
+    files = [f for f in result.stdout.split('\0') if f]
+    copied = 0
+    errors: List[str] = []
+
+    for rel in files:
+        # Skip large artifact paths
+        if any(rel.startswith(prefix) or rel == prefix.rstrip('/') for prefix in _ARTIFACT_DIR_PREFIXES):
+            continue
+        src = canonical_repo / rel
+        if not src.is_file():
+            continue
+        dst = target_repo / rel
+        try:
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src, dst)
+            copied += 1
+        except Exception as e:
+            errors.append(f'{rel}: {e}')
+
+    return copied, errors
+
+
+def option_worktrees_create_group() -> None:
+    """Create a new worktree group for all managed repositories."""
+    clear_screen()
+    print("~" * 60)
+    print(f"  {ORANGE}CREATE WORKTREE GROUP{RESET}")
+    print("~" * 60)
+    print()
+
+    group_name = input("New worktree group name: ").strip()
+    is_valid, reason = validate_worktree_group_name(group_name)
+    if not is_valid:
+        print(f"\n{RED}✗ Invalid group name: {reason}{RESET}")
+        wait_for_key()
+        return
+
+    group_root = ROOT_PATH / group_name
+    if group_root.exists():
+        print(f"\n{RED}✗ Group folder already exists: {group_root}{RESET}")
+        wait_for_key()
+        return
+
+    print(f"\nCreating worktree group {ORANGE}{group_name}{RESET}...")
+
+    summary: List[Tuple[str, str, str]] = []
+    all_ok = True
+    worktree_branch = f"repo-man/{group_name}"
+
+    for repo_rel in REPO_RELATIVE_PATHS:
+        canonical_repo = (ROOT_PATH / repo_rel).resolve()
+        target_repo = (group_root / repo_rel).resolve()
+
+        if not canonical_repo.exists() or not (canonical_repo / '.git').exists():
+            all_ok = False
+            summary.append((str(repo_rel), 'error', 'Canonical repo missing or invalid'))
+            continue
+
+        if target_repo.exists():
+            all_ok = False
+            summary.append((str(repo_rel), 'error', 'Target path already exists'))
+            continue
+
+        target_repo.parent.mkdir(parents=True, exist_ok=True)
+
+        # Prune stale worktree entries first so that a previously-deleted group
+        # with the same name doesn't leave behind a "already used by worktree"
+        # reference that would block the add.
+        run_git_command(
+            canonical_repo,
+            ['git', 'worktree', 'prune', '--expire', 'now'],
+            show_output=False
+        )
+
+        # We cannot check out 'main' in multiple worktrees at once.
+        # Use a dedicated branch derived from main for this worktree group.
+        returncode, _, stderr = run_git_command(
+            canonical_repo,
+            ['git', 'worktree', 'add', '-B', worktree_branch, str(target_repo), 'main'],
+            show_output=False
+        )
+        if returncode != 0:
+            all_ok = False
+            summary.append((str(repo_rel), 'error', stderr.strip() or 'git worktree add failed'))
+            continue
+
+        upstream_code, _, upstream_err = run_git_command(
+            target_repo,
+            ['git', 'branch', '--set-upstream-to', 'origin/main', worktree_branch],
+            show_output=False
+        )
+        if upstream_code != 0:
+            all_ok = False
+            summary.append((str(repo_rel), 'error', upstream_err.strip() or 'failed to set upstream'))
+            continue
+
+        pull_code, _, pull_err = run_git_command(target_repo, ['git', 'pull', '--ff-only'], show_output=False)
+        if pull_code != 0:
+            all_ok = False
+            summary.append((str(repo_rel), 'error', pull_err.strip() or 'git pull failed'))
+            continue
+
+        copied_count, copy_errors = copy_gitignored_files(canonical_repo, target_repo)
+        copy_note = f', copied {copied_count} gitignored file(s)'
+        if copy_errors:
+            copy_note += f' (with {len(copy_errors)} copy error(s): {" | ".join(copy_errors[:3])})'
+
+        summary.append((str(repo_rel), 'ok', f"Created from main on '{worktree_branch}' and pulled latest{copy_note}"))
+
+    print("\n" + "~" * 60)
+    print(f"  {ORANGE}SUMMARY{RESET}")
+    print("~" * 60)
+    for repo_rel, status, message in summary:
+        if status == 'ok':
+            print(f"  {GREEN}✓ {repo_rel}{RESET}: {message}")
+        else:
+            print(f"  {RED}✗ {repo_rel}{RESET}: {message}")
+
+    if all_ok:
+        print(f"\n{GREEN}✓ Worktree group '{group_name}' created successfully{RESET}")
+    else:
+        print(f"\n{YELLOW}⚠️  Group creation finished with errors. Review summary above.{RESET}")
+
+    wait_for_key()
+
+
+def _select_worktree_group(prompt: str, include_main: bool = True) -> Tuple[bool, str]:
+    """Select a worktree group using single-key input."""
+    groups, _ = discover_worktree_groups()
+    selectable = groups if include_main else [group for group in groups if group != MAIN_WORKTREE_GROUP]
+
+    if not selectable:
+        print(f"{YELLOW}No selectable worktree groups available.{RESET}")
+        wait_for_key()
+        return False, ''
+
+    if len(selectable) > 9:
+        print(f"{YELLOW}Too many groups for single-key menu. Keep 9 or fewer groups.{RESET}")
+        wait_for_key()
+        return False, ''
+
+    print()
+    for i, group in enumerate(selectable, 1):
+        marker = ' (active)' if group == _active_worktree_group else ''
+        print(f"  {i}. {group}{marker}")
+
+    print("\nPress number to select, q or Esc to cancel")
+
+    while True:
+        print(f"\n{prompt} (1-{len(selectable)}, q, Esc): ", end='', flush=True)
+        choice = get_single_char()
+        print()
+
+        if choice in ('q', 'Q', '\x1b'):
+            return False, ''
+
+        if choice.isdigit():
+            index = int(choice)
+            if 1 <= index <= len(selectable):
+                return True, selectable[index - 1]
+
+        print(f"{RED}✗ Invalid choice.{RESET}")
+
+
+def option_worktrees_switch_group() -> None:
+    """Switch the active worktree group."""
+    clear_screen()
+    print("~" * 60)
+    print(f"  {ORANGE}SWITCH WORKTREE GROUP{RESET}")
+    print("~" * 60)
+
+    selected, target_group = _select_worktree_group('Select group', include_main=True)
+    if not selected:
+        return
+
+    if target_group == _active_worktree_group:
+        print(f"\n{YELLOW}⚠️  '{target_group}' is already active.{RESET}")
+        wait_for_key()
+        return
+
+    is_valid, reason = validate_worktree_group(target_group)
+    if not is_valid:
+        print(f"\n{RED}✗ Cannot switch: {reason}{RESET}")
+        wait_for_key()
+        return
+
+    warnings = set_active_worktree_group(target_group)
+    print(f"\n{GREEN}✓ Active worktree group is now '{target_group}'{RESET}")
+    if warnings:
+        print(f"\n{YELLOW}Warnings:{RESET}")
+        for warning in warnings:
+            print(f"  {YELLOW}• {warning}{RESET}")
+
+    wait_for_key()
+
+
+def option_worktrees_delete_group() -> None:
+    """Delete a non-main worktree group with confirmation."""
+    global _active_worktree_group
+
+    clear_screen()
+    print("~" * 60)
+    print(f"  {ORANGE}DELETE WORKTREE GROUP{RESET}")
+    print("~" * 60)
+
+    selected, group_name = _select_worktree_group('Delete group', include_main=False)
+    if not selected:
+        return
+
+    if group_name == MAIN_WORKTREE_GROUP:
+        print(f"\n{RED}✗ The main worktree group cannot be deleted.{RESET}")
+        wait_for_key()
+        return
+
+    print(f"\n{RED}WARNING: This will remove all worktree folders in '{group_name}'.{RESET}")
+    confirmation = input(f"Type '{group_name}' to confirm deletion: ").strip()
+    if confirmation != group_name:
+        print(f"\n{YELLOW}⚠️  Confirmation did not match. Aborted.{RESET}")
+        wait_for_key()
+        return
+
+    is_active_group = group_name == _active_worktree_group
+    if is_active_group:
+        ok, message = run_docker_stack_down(get_active_parent_repo_path())
+        if not ok:
+            print(f"\n{YELLOW}⚠️  Docker down warning: {message}{RESET}")
+
+    errors: List[str] = []
+    group_root = ROOT_PATH / group_name
+    for repo_rel in REPO_RELATIVE_PATHS:
+        canonical_repo = (ROOT_PATH / repo_rel).resolve()
+        target_repo = (group_root / repo_rel).resolve()
+
+        if not target_repo.exists():
+            continue
+
+        returncode, _, stderr = run_git_command(
+            canonical_repo,
+            ['git', 'worktree', 'remove', str(target_repo)],
+            show_output=False
+        )
+        if returncode != 0:
+            err = stderr.strip() or 'git worktree remove failed'
+            # If worktree has changes/locks, allow one force attempt.
+            print(f"\n{YELLOW}⚠️  Could not remove {repo_rel}: {err}{RESET}")
+            print("Try force remove this worktree? (y/n): ", end='', flush=True)
+            force_choice = get_single_char().lower()
+            print(force_choice)
+            if force_choice == 'y':
+                force_code, _, force_err = run_git_command(
+                    canonical_repo,
+                    ['git', 'worktree', 'remove', '--force', str(target_repo)],
+                    show_output=False
+                )
+                if force_code != 0:
+                    errors.append(f"{repo_rel}: {force_err.strip() or 'force remove failed'}")
+            else:
+                errors.append(f"{repo_rel}: removal skipped")
+
+    if errors:
+        print(f"\n{RED}✗ Group was not fully deleted:{RESET}")
+        for err in errors:
+            print(f"  {RED}• {err}{RESET}")
+        wait_for_key()
+        return
+
+    if group_root.exists():
+        try:
+            shutil.rmtree(group_root)
+        except Exception as e:
+            print(f"\n{YELLOW}⚠️  Group worktrees removed, but folder cleanup failed: {e}{RESET}")
+
+    if is_active_group:
+        _active_worktree_group = MAIN_WORKTREE_GROUP
+        save_active_worktree_group(_active_worktree_group)
+        ok, message = run_docker_stack_up(get_active_parent_repo_path())
+        if not ok:
+            print(f"\n{YELLOW}⚠️  Docker up warning after reset to main: {message}{RESET}")
+
+    print(f"\n{GREEN}✓ Deleted worktree group '{group_name}'{RESET}")
+    wait_for_key()
+
+
+def option_worktrees_cleanup_group() -> None:
+    """Clean up problematic/orphaned worktrees for a non-main group."""
+    clear_screen()
+    print("~" * 60)
+    print(f"  {ORANGE}CLEANUP WORKTREE GROUP{RESET}")
+    print("~" * 60)
+    print()
+    print("Use this when a worktree group folder was deleted manually,")
+    print("or when git still shows stale worktree entries for that group.")
+    print()
+
+    group_name = input("Group name to cleanup (not main): ").strip()
+    if group_name in RESERVED_WORKTREE_GROUP_NAMES:
+        print(f"\n{RED}✗ Cleanup is not allowed for '{group_name}'.{RESET}")
+        wait_for_key()
+        return
+
+    is_valid, reason = validate_worktree_group_name(group_name)
+    if not is_valid:
+        print(f"\n{RED}✗ Invalid group name: {reason}{RESET}")
+        wait_for_key()
+        return
+
+    if group_name == _active_worktree_group:
+        print(f"\n{YELLOW}⚠️  '{group_name}' is currently active. Switch groups first.{RESET}")
+        wait_for_key()
+        return
+
+    print(f"\n{YELLOW}This will only target worktrees under: {ROOT_PATH / group_name}{RESET}")
+    confirmation = input(f"Type '{group_name}' to confirm cleanup: ").strip()
+    if confirmation != group_name:
+        print(f"\n{YELLOW}⚠️  Confirmation did not match. Aborted.{RESET}")
+        wait_for_key()
+        return
+
+    group_root = (ROOT_PATH / group_name).resolve()
+    group_branch = f"repo-man/{group_name}"
+    summary: List[Tuple[str, str, str]] = []
+
+    for repo_rel in REPO_RELATIVE_PATHS:
+        canonical_repo = (ROOT_PATH / repo_rel).resolve()
+        repo_label = str(repo_rel)
+
+        if not canonical_repo.exists() or not (canonical_repo / '.git').exists():
+            summary.append((repo_label, 'error', 'Canonical repo missing or invalid'))
+            continue
+
+        ok, worktree_paths, err = get_worktree_paths_for_repo(canonical_repo)
+        if not ok:
+            summary.append((repo_label, 'error', err or 'Failed to list worktrees'))
+            continue
+
+        removed_count = 0
+        stale_matches = 0
+        repaired_broken_folders = 0
+        issues: List[str] = []
+
+        for worktree_path in sorted(worktree_paths):
+            try:
+                worktree_path.relative_to(group_root)
+            except ValueError:
+                continue
+
+            if not worktree_path.exists():
+                stale_matches += 1
+                continue
+
+            # If the worktree folder exists but .git is missing, git worktree remove
+            # fails validation. Remove the broken folder directly, then prune metadata.
+            if not (worktree_path / '.git').exists():
+                try:
+                    shutil.rmtree(worktree_path)
+                    repaired_broken_folders += 1
+                    stale_matches += 1
+                except Exception as e:
+                    issues.append(f"Failed removing broken folder {worktree_path}: {e}")
+                continue
+
+            returncode, _, stderr = run_git_command(
+                canonical_repo,
+                ['git', 'worktree', 'remove', '--force', str(worktree_path)],
+                show_output=False
+            )
+            if returncode == 0:
+                removed_count += 1
+            else:
+                issues.append(stderr.strip() or f'Failed removing {worktree_path}')
+
+        prune_code, prune_out, prune_err = run_command_in_dir(
+            ['git', 'worktree', 'prune', '--expire', 'now', '--verbose'],
+            canonical_repo
+        )
+        if prune_code != 0:
+            issues.append((prune_err or prune_out or 'git worktree prune failed').strip())
+
+        branch_code, _, branch_err = run_git_command(
+            canonical_repo,
+            ['git', 'branch', '-D', group_branch],
+            show_output=False
+        )
+        if branch_code != 0:
+            lowered = (branch_err or '').lower()
+            if 'not found' not in lowered and 'not exist' not in lowered:
+                issues.append(branch_err.strip() or f'Failed deleting branch {group_branch}')
+
+        detail = (
+            f"removed={removed_count}, repaired-broken={repaired_broken_folders}, "
+            f"stale-matches={stale_matches}, pruned=yes"
+        )
+        if issues:
+            summary.append((repo_label, 'error', f"{detail}; issues: {' | '.join(issues)}"))
+        else:
+            summary.append((repo_label, 'ok', detail))
+
+    print("\n" + "~" * 60)
+    print(f"  {ORANGE}CLEANUP SUMMARY{RESET}")
+    print("~" * 60)
+    had_errors = False
+    for repo_label, status, detail in summary:
+        if status == 'ok':
+            print(f"  {GREEN}✓ {repo_label}{RESET}: {detail}")
+        else:
+            had_errors = True
+            print(f"  {RED}✗ {repo_label}{RESET}: {detail}")
+
+    # Remove the group root folder if it still exists — otherwise it remains
+    # visible in 'list' as an invalid candidate.
+    if not had_errors and group_root.exists():
+        try:
+            shutil.rmtree(group_root)
+            print(f"\n{GREEN}✓ Removed group folder: {group_root}{RESET}")
+        except Exception as e:
+            print(f"\n{YELLOW}⚠️  Git metadata cleaned, but could not remove group folder: {e}{RESET}")
+
+    if had_errors:
+        print(f"\n{YELLOW}⚠️  Cleanup completed with some errors. See details above.{RESET}")
+    else:
+        print(f"\n{GREEN}✓ Cleanup complete for worktree group '{group_name}'.{RESET}")
+
+    wait_for_key()
+
+
+def option_w_worktrees() -> None:
+    """Worktrees submenu."""
+    while True:
+        clear_screen()
+        print("~" * 60)
+        print(f"  {ORANGE}WORKTREES{RESET}")
+        print("~" * 60)
+        print()
+        print("  1. List worktree groups")
+        print("  2. Create a worktree group")
+        print("  3. Switch worktree group")
+        print("  4. Delete a worktree group")
+        print("  5. Help")
+        print("  6. Cleanup problematic worktrees")
+        print("\nPress q or Esc to return")
+        print("\n" + "~" * 60)
+
+        print("\nSelect option (1-6, q, Esc): ", end='', flush=True)
+        choice = get_single_char()
+        print()
+
+        if choice in ('q', 'Q', '\x1b'):
+            return
+        if choice == '1':
+            option_worktrees_list_groups()
+        elif choice == '2':
+            option_worktrees_create_group()
+        elif choice == '3':
+            option_worktrees_switch_group()
+        elif choice == '4':
+            option_worktrees_delete_group()
+        elif choice == '5':
+            show_worktrees_help()
+        elif choice == '6':
+            option_worktrees_cleanup_group()
+        else:
+            print(f"\n{RED}✗ Invalid option. Please select 1-6.{RESET}")
+            wait_for_key()
+
+
 def main():
     """Main application loop."""
     # Validate repositories at startup
@@ -1476,13 +2357,15 @@ def main():
     if not validate_repos():
         print(f"\n{RED}✗ Exiting due to repository validation issues.{RESET}")
         sys.exit(1)
+
+    initialise_active_worktree_group()
     
     # Main menu loop
     while True:
         show_menu()
         
         try:
-            print("\nSelect option (1-9, q to quit): ", end='', flush=True)
+            print("\nSelect option (1-9, w, q to quit): ", end='', flush=True)
             choice = get_single_char()
             print()  # New line after character is read
 
@@ -1508,12 +2391,14 @@ def main():
                     _run_cache_fetch()
             elif choice == '9':
                 option_9_create_branches()
+            elif choice in ('w', 'W'):
+                option_w_worktrees()
             elif choice == 'q' or choice == 'Q' or choice == '\x1b':
                 clear_screen()
                 print("Goodbye! 👋")
                 sys.exit(0)
             else:
-                print(f"\n{RED}✗ Invalid option. Please select 1-9.{RESET}")
+                print(f"\n{RED}✗ Invalid option. Please select 1-9 or w.{RESET}")
                 wait_for_key()
         
         except KeyboardInterrupt:
