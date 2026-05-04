@@ -567,26 +567,6 @@ def load_active_worktree_group() -> str:
         return MAIN_WORKTREE_GROUP
 
 
-def get_group_with_running_docker_stack(groups: List[str]) -> Optional[str]:
-    """Best-effort detection of a group with running compose services."""
-    if shutil.which('docker') is None:
-        return None
-
-    for group in groups:
-        repo_root = get_parent_repo_path_for_group(group)
-        if not repo_root.exists():
-            continue
-
-        returncode, stdout, _ = run_command_in_dir(
-            ['docker', 'compose', 'ps', '-q'],
-            repo_root
-        )
-        if returncode == 0 and stdout.strip():
-            return group
-
-    return None
-
-
 def initialise_active_worktree_group() -> None:
     """Load and validate active worktree group from state, then notify on mismatch."""
     global _active_worktree_group
@@ -605,17 +585,6 @@ def initialise_active_worktree_group() -> None:
                 f"Falling back to '{MAIN_WORKTREE_GROUP}'.{RESET}"
             )
         save_active_worktree_group(_active_worktree_group)
-
-    running_group = get_group_with_running_docker_stack(valid_groups)
-    if running_group and running_group != _active_worktree_group:
-        mismatch = (
-            f"{YELLOW}⚠️  Docker appears active for group '{running_group}', "
-            f"but repo-man is set to '{_active_worktree_group}'.{RESET}"
-        )
-        if _startup_notice:
-            _startup_notice = f"{_startup_notice}\n{mismatch}"
-        else:
-            _startup_notice = mismatch
 
 
 def run_docker_stack_down(repo_root: Path) -> Tuple[bool, str]:
@@ -1422,9 +1391,7 @@ def option_5_run_make_command():
         # Change to the parent repo directory
         original_dir = os.getcwd()
         os.chdir(parent_repo)
-        
         returncode = os.system(selected_cmd['command'])
-        
         os.chdir(original_dir)
         
         print("\n" + "~" * 60)
@@ -1435,12 +1402,11 @@ def option_5_run_make_command():
     
     except Exception as e:
         print(f"{RED}✗ Error running command: {e}{RESET}")
-        # Make sure we restore the original directory
         try:
             os.chdir(original_dir)
-        except:
+        except Exception:
             pass
-    
+
     wait_for_key()
 
 
@@ -1843,8 +1809,39 @@ def option_worktrees_list_groups() -> None:
     wait_for_key()
 
 
+# Dependency install directories that are copied wholesale into new worktrees
+# so the new group doesn't need a fresh install run.
+_DEPENDENCY_DIRS = (
+    'node_modules',
+    'vendor',
+    '.venv',
+    'venv',
+)
+
+
+def copy_dependency_dirs(canonical_repo: Path, target_repo: Path) -> Tuple[int, List[str]]:
+    """Copy installed dependency directories from canonical_repo into target_repo."""
+    copied = 0
+    errors: List[str] = []
+
+    for dirname in _DEPENDENCY_DIRS:
+        src = canonical_repo / dirname
+        if not src.is_dir():
+            continue
+        dst = target_repo / dirname
+        if dst.exists():
+            continue
+        try:
+            shutil.copytree(src, dst, symlinks=True)
+            copied += 1
+        except Exception as e:
+            errors.append(f'{dirname}: {e}')
+
+    return copied, errors
+
+
 # Directories that are gitignored because they contain build artifacts, not config.
-# We do not copy these when seeding a new worktree.
+# We do not copy these when seeding a new worktree via copy_gitignored_files.
 _ARTIFACT_DIR_PREFIXES = (
     'node_modules/',
     '.next/',
@@ -1990,6 +1987,13 @@ def option_worktrees_create_group() -> None:
         copy_note = f', copied {copied_count} gitignored file(s)'
         if copy_errors:
             copy_note += f' (with {len(copy_errors)} copy error(s): {" | ".join(copy_errors[:3])})'
+
+        print(f"  • Copying dependency directories (node_modules, vendor, etc.)...")
+        dep_count, dep_errors = copy_dependency_dirs(canonical_repo, target_repo)
+        dep_note = f', copied {dep_count} dependency dir(s)'
+        if dep_errors:
+            dep_note += f' (with {len(dep_errors)} copy error(s): {" | ".join(dep_errors[:3])})'
+        copy_note += dep_note
 
         summary.append((str(repo_rel), 'ok', f"Created from main on '{worktree_branch}' and pulled latest{copy_note}"))
 
