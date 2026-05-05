@@ -15,9 +15,11 @@ Written in Python. Vibe coded with 🧡
 - Hard reset all repos to `main`
 - Stash + checkout all repos to `main`
 - Fuzzy search branch checkout per repo
-- Run the make commands in Haysto-v2 repo
+- Run the active group's Haysto-v2 make/app commands
 - Open a repo in a selected code editor
 - Show Docker container overview + one-key cleanup actions
+- Create and switch full multi-repo worktree groups
+- Initialise non-main worktrees and bootstrap their isolated databases
 
 ---
 
@@ -30,10 +32,11 @@ Written in Python. Vibe coded with 🧡
 ### Feature-dependent
 
 - `fzf` (for branch picker in option 4)
-- Docker CLI + running daemon (for option 7)
+- Docker CLI + running daemon (for option 5, option 7, and worktree stack management)
+- Node.js (for the Haysto node-modules manager used by make/init and worktree initialisation)
 - Editor CLIs you want to use (`kitty`, `code`, `zed`, etc.)
 - Github CLI (gh) installed and logged in (to show requested reviews and unread notifications)
-- `icalBuddy` installed (to show upcoming calendar events)
+- `icalBuddy` installed (to show upcoming calendar events on MacOS)
 
 ---
 
@@ -45,7 +48,7 @@ Edit the `REPOS` list in:
 
 Add in what repos you want to manage, with their paths on your system. Use absolute paths or `~` paths.
 
-Get the uuid of your work calendar and place it in the ICAL_CALENDAR_IDS const near line 28.
+Get the uuid of your work calendar and place it in the `ICAL_CALENDAR_IDS` constant near the top of `repo-man.py`.
 
 ```bash
 # lists your mac calendars
@@ -63,7 +66,7 @@ chmod +x repo-man.py
 Run it directly (adjust path as required):
 
 ```bash
-./haya-repos.py
+./repo-man.py
 ```
 
 Or via Python:
@@ -88,20 +91,22 @@ Then type 'haya' to launch.
 
 ---
 
-## Add a new code editor option
+## 5. Add a new code editor option
 
-Code editors are defined in `EDITOR_MENU_OPTIONS` and dispatched by function name.
+Code editors are defined in `EDITOR_MENU_OPTIONS` in `repo-man.py`.
 
 ### 1) Add a launcher function
 
 You'll need to write a function with the right launch command for your editor.
 
-In [repo-man.py](./repo-man.py), add a function with this signature:
+In [repo_man/shell.py](./repo_man/shell.py), add a function with this signature:
 
 ```python
 def open_repo_in_example(repo_path: Path) -> Tuple[int, str]:
     return run_editor_command(['example-editor-cli-command', str(repo_path)], "Opened in Example Editor")
 ```
+
+It needs to begin with `open_repo_in_`.
 
 ### 2) Add an entry to `EDITOR_MENU_OPTIONS`
 
@@ -113,7 +118,47 @@ def open_repo_in_example(repo_path: Path) -> Tuple[int, str]:
 }
 ```
 
-That is all you need. The menu is rendered dynamically and the function is called automatically.
+---
+
+## 6. Worktree groups
+
+This is an optional feature, to create and manage multiple worktree groups with separate branches, local files, and Docker containers. Helpful if you need to work on multiple things concurrently, or have different database setups, or want to compare your work against `main` without switching branches.
+
+Repo-man treats a worktree group as a full set of all configured repos under one named folder.
+
+- `main` is the maintained default group at `ROOTDIR/<repos>`
+- each extra group lives at `ROOTDIR/<group-name>/<repos>`
+- new groups are created from each repo's `main` branch on a new branch named `worktree-<group>/main` by default
+- You can't checkout the same branch in multiple worktrees, so we create a new one.
+- repo-man copies only allowlisted gitignored local config files into the new worktree, such as `.env`, `.env.*`, and local nginx certs under `docker/nginx/certificates/`, then recreates the shared-lib symlinks
+
+### Docker behavior
+
+- `main` keeps the original docker compose project naming
+- non-main groups use a compose project name prefixed with the group name, so they get their own containers and volumes
+- switching groups brings down any other running worktree stack first
+- if the target group is already initialised, switching starts it with the `local` compose profile so non-main groups get their own local-profile services too, including things like nginx, MySQL, mail, redis, and supervisor when the Haysto compose file defines them
+- if the target group is still fresh, switching leaves the stack stopped so **Initialise active worktree** can follow the same order as `make init`: build, install dependencies, then start containers
+
+### Initialising a new worktree
+
+New worktree groups are created with isolated repos, local files, and docker naming, but they are **not** fully bootstrapped yet.
+
+The recommended flow is:
+
+1. Create the worktree group.
+2. Switch to it.
+3. Open the worktrees menu and run **Initialise active worktree**.
+4. Open option **5** and run **Initialise current worktree database**.
+5. Then you can work with the new worktree as you would normally, without interfering with the main group.
+
+### Important setup note
+
+Creating a worktree group does **not** initialise its database contents by itself.
+
+- the worktrees menu's **Initialise active worktree** action runs the worktree-safe equivalent of `make init`
+- option **5** adds **Initialise current worktree database** for non-main groups, which runs the migrations, seed step, and permission reseed needed to get the app working
+- regular `make init` is hidden from option **5** when a non-main group is active because Composer's git-hook setup is not worktree-safe inside the mounted containers
 
 ---
 
