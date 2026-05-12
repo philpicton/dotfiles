@@ -100,6 +100,9 @@ elif [[ -d "/usr/local/Homebrew" ]]; then
     BREW_PREFIX="/usr/local"
 fi
 
+# zsh-z plugin for quickly navigating to frequently used directories
+source ~/.config/zsh-z/zsh-z.plugin.zsh
+
 # Initialize completion system
 autoload -Uz compinit
 compinit
