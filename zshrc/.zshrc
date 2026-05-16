@@ -109,9 +109,9 @@ compinit
 
 export YAZI_IMAGE_ADAPTER="kitty"
 
-# php homebrew path
-export PATH="/opt/homebrew/opt/php@8.3/bin:$PATH"
-export PATH="/opt/homebrew/opt/php@8.3/sbin:$PATH"
+# # php homebrew path
+# export PATH="/opt/homebrew/opt/php@8.3/bin:$PATH"
+# export PATH="/opt/homebrew/opt/php@8.3/sbin:$PATH"
 
 # zsh plugins
 if [[ -n "$BREW_PREFIX" ]]; then
