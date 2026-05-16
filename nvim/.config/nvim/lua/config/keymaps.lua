@@ -31,13 +31,8 @@ vim.keymap.set("n", "<leader>gi", ":GitBlameToggle<cr>", { desc = "Toggle inline
 
 -- Lazydocker
 vim.keymap.set("n", "<leader>k", function()
-    Snacks.terminal({"lazydocker"})
+  Snacks.terminal({ "lazydocker" })
 end, { desc = "Toggle LazyDocker", noremap = true, silent = true })
 
 -- Save file with Cmd+S (macOS) or Ctrl+S
 vim.keymap.set({ "n", "i", "v" }, "<D-s>", "<cmd>w<CR>", { desc = "Save file" })
-
--- Repo Man
-vim.keymap.set("n", "<leader>hh", function()
-  Snacks.terminal({ "/Users/phil/code/scripts/repo-man.py" })
-end, { desc = "Repo Man" })
