@@ -105,13 +105,21 @@ source ~/.config/zsh-z/zsh-z.plugin.zsh
 
 # Initialize completion system
 autoload -Uz compinit
-compinit
+# Reuse a cached completion dump on later shells to speed up startup.
+ZCOMPDUMP="${XDG_CACHE_HOME:-$HOME/.cache}/zcompdump-$ZSH_VERSION"
+if [[ -f "$ZCOMPDUMP" ]]; then
+    compinit -C -d "$ZCOMPDUMP"
+else
+    compinit -d "$ZCOMPDUMP"
+fi
 
 export YAZI_IMAGE_ADAPTER="kitty"
 
 # php homebrew path
-export PATH="/opt/homebrew/opt/php@8.3/bin:$PATH"
-export PATH="/opt/homebrew/opt/php@8.3/sbin:$PATH"
+if [[ -n "$BREW_PREFIX" && -d "$BREW_PREFIX/opt/php@8.3" ]]; then
+    export PATH="$BREW_PREFIX/opt/php@8.3/bin:$PATH"
+    export PATH="$BREW_PREFIX/opt/php@8.3/sbin:$PATH"
+fi
 
 # zsh plugins
 if [[ -n "$BREW_PREFIX" ]]; then
@@ -121,4 +129,3 @@ if [[ -n "$BREW_PREFIX" ]]; then
     [ -f "$BREW_PREFIX/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" ] && \
         source "$BREW_PREFIX/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
 fi
-

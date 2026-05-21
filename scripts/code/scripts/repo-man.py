@@ -35,24 +35,6 @@ REPOS = [
     "enquiry-form",
 ]
 
-# You can add other code editors here, just write a function in repo_man/shell.py to open your editor.
-EDITOR_MENU_OPTIONS = [
-    {
-        "key": "1",
-        "label": "NVIM in new Kitty tab",
-        "function_name": "open_repo_in_kitty_tab",
-    },
-    {
-        "key": "2",
-        "label": "VS Code",
-        "function_name": "open_repo_in_vscode",
-    },
-    {
-        "key": "3",
-        "label": "Zed",
-        "function_name": "open_repo_in_zed",
-    },
-]
 # You can add other cli commands here, use letters if you run out of numbers!
 MAKE_COMMANDS = [
     {"key": "1", "label": "Restart docker containers, manage node modules", "command": "make restart"},
@@ -85,7 +67,6 @@ def build_app_config() -> AppConfig:
         ical_calendar_ids=ICAL_CALENDAR_IDS,
         rootdir=ROOTDIR,
         repos=REPOS,
-        editor_menu_options=EDITOR_MENU_OPTIONS,
         make_commands=MAKE_COMMANDS,
         worktree_branch_template=WORKTREE_BRANCH_TEMPLATE,
         worktree_gitignored_copy_patterns=WORKTREE_GITIGNORED_COPY_PATTERNS,

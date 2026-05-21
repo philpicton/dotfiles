@@ -16,7 +16,8 @@ Written in Python. Vibe coded with 🧡
 - Stash + checkout all repos to `main`
 - Fuzzy search branch checkout per repo
 - Run the active group's Haysto-v2 make/app commands
-- Open a repo in a selected code editor
+- Open a repo directly in `nvim` in a new Kitty tab
+- Open `haysto-v2-api`, `haysto-v2-collect`, and `haysto-v2-create` together in separate Kitty tabs
 - Show Docker container overview + one-key cleanup actions
 - Create and switch full multi-repo worktree groups
 - Initialise non-main worktrees and bootstrap their isolated databases
@@ -34,7 +35,7 @@ Written in Python. Vibe coded with 🧡
 - `fzf` (for branch picker in option 4)
 - Docker CLI + running daemon (for option 5, option 7, and worktree stack management)
 - Node.js (for the Haysto node-modules manager used by make/init and worktree initialisation)
-- Editor CLIs you want to use (`kitty`, `code`, `zed`, etc.)
+- `kitty` in your `PATH` (option 6 launches `nvim` inside Kitty tabs)
 - Github CLI (gh) installed and logged in (to show requested reviews and unread notifications)
 - `icalBuddy` installed (to show upcoming calendar events on MacOS)
 
@@ -91,32 +92,15 @@ Then type 'haya' to launch.
 
 ---
 
-## 5. Add a new code editor option
+## 5. Open repos in Kitty
 
-Code editors are defined in `EDITOR_MENU_OPTIONS` in `repo-man.py`.
+Option **6** always opens the selected repo in `nvim` in a new Kitty tab.
 
-### 1) Add a launcher function
+Inside that menu, press **a** to open these repos together in separate tabs, in this order:
 
-You'll need to write a function with the right launch command for your editor.
-
-In [repo_man/shell.py](./repo_man/shell.py), add a function with this signature:
-
-```python
-def open_repo_in_example(repo_path: Path) -> Tuple[int, str]:
-    return run_editor_command(['example-editor-cli-command', str(repo_path)], "Opened in Example Editor")
-```
-
-It needs to begin with `open_repo_in_`.
-
-### 2) Add an entry to `EDITOR_MENU_OPTIONS`
-
-```python
-{
-    'key': '4',
-    'label': 'Example Editor',
-    'function_name': 'open_repo_in_example',
-}
-```
+1. `haysto-v2-api`
+2. `haysto-v2-collect`
+3. `haysto-v2-create`
 
 ---
 

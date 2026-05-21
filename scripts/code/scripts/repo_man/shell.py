@@ -1,12 +1,9 @@
-"""Subprocess, Git, fzf, and editor-launch helper functions."""
+"""Subprocess, Git, fzf, and Kitty launch helper functions."""
 
 import subprocess
 import sys
 from pathlib import Path
-from typing import Callable, List, Optional, Tuple
-
-
-EditorLauncher = Callable[[Path], Tuple[int, str]]
+from typing import List, Tuple
 
 
 def run_git_command(
@@ -234,28 +231,26 @@ def open_repo_in_kitty_tab(repo_path: Path) -> Tuple[int, str]:
     return run_editor_command(cmd, "Opened in new kitty tab")
 
 
-def open_repo_in_vscode(repo_path: Path) -> Tuple[int, str]:
-    """Open the repository in VS Code."""
-    return run_editor_command(["code", str(repo_path)], "Opened in VS Code")
+def open_repos_in_kitty_tabs(repo_paths: List[Path]) -> Tuple[int, str]:
+    """Open multiple repositories in nvim across separate kitty tabs."""
+    missing_repo_paths = [str(repo_path) for repo_path in repo_paths if not repo_path.exists()]
+    if missing_repo_paths:
+        return 1, "Missing repositories:\n{paths}".format(paths="\n".join(missing_repo_paths))
 
+    opened_repo_names = []
+    for repo_path in repo_paths:
+        returncode, message = open_repo_in_kitty_tab(repo_path)
+        if returncode != 0:
+            opened_message = ""
+            if opened_repo_names:
+                opened_message = " after opening {opened}".format(
+                    opened=", ".join(opened_repo_names),
+                )
+            return returncode, "Failed to open {name}{opened}: {message}".format(
+                name=repo_path.name,
+                opened=opened_message,
+                message=message,
+            )
+        opened_repo_names.append(repo_path.name)
 
-def open_repo_in_zed(repo_path: Path) -> Tuple[int, str]:
-    """Open the repository in Zed."""
-    return run_editor_command(["zed", str(repo_path)], "Opened in Zed")
-
-
-def get_editor_launcher(function_name: str) -> Optional[EditorLauncher]:
-    """Resolve a configured editor launcher directly from this module.
-
-    EDITOR_MENU_OPTIONS already stores the function name, so keep that config as
-    the single source of truth and only allow lookups that follow the editor
-    launcher naming convention.
-    """
-    launcher_name = function_name.strip()
-    if not launcher_name.startswith("open_repo_in_"):
-        return None
-
-    launcher = getattr(sys.modules[__name__], launcher_name, None)
-    if not callable(launcher):
-        return None
-    return launcher
+    return 0, "Opened kitty tabs for {names}".format(names=", ".join(opened_repo_names))

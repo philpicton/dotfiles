@@ -5,13 +5,14 @@ import subprocess
 import shutil
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Tuple
 
 from . import dashboard, worktrees
 from .context import AppConfig, AppState
 from .shell import (
-    get_editor_launcher,
     input_with_default,
+    open_repo_in_kitty_tab,
+    open_repos_in_kitty_tabs,
     pick_branch_with_fzf,
     pick_source_branch_with_fzf,
     run_command,
@@ -32,12 +33,11 @@ from .ui import (
 )
 
 
-def find_editor_option(config: AppConfig, choice: str) -> Optional[Dict[str, str]]:
-    """Find a configured editor option by its single-key choice."""
-    for option in config.editor_menu_options:
-        if option["key"] == choice:
-            return option
-    return None
+KITTY_BATCH_REPO_NAMES = (
+    "haysto-v2-api",
+    "haysto-v2-collect",
+    "haysto-v2-create",
+)
 
 
 def make_command_changes_docker_stack(command: str) -> bool:
@@ -88,41 +88,20 @@ def get_make_commands_for_current_group(config: AppConfig, state: AppState) -> L
     return filtered_commands
 
 
-def select_code_editor_launcher(config: AppConfig) -> tuple:
-    """Show the editor launcher menu and return the chosen function name."""
-    clear_screen()
-    print("~" * 60)
-    print("  {orange}SELECT CODE EDITOR{reset}".format(orange=ORANGE, reset=RESET))
-    print("~" * 60)
-    print()
-    for option in config.editor_menu_options:
-        print("  {key}. {label}".format(key=option["key"], label=option["label"]))
-        print()
+def get_kitty_batch_repo_paths(repo_paths: List[Path]) -> Tuple[List[Path], List[str]]:
+    """Return the configured multi-open repo paths in their required order."""
+    repo_paths_by_name = {repo_path.name: repo_path for repo_path in repo_paths}
+    resolved_repo_paths = []
+    missing_repo_names = []
 
-    print("\nPress number to select launcher")
-    print("Press q or Esc to cancel")
-    print("\n" + "~" * 60)
+    for repo_name in KITTY_BATCH_REPO_NAMES:
+        repo_path = repo_paths_by_name.get(repo_name)
+        if repo_path is None:
+            missing_repo_names.append(repo_name)
+            continue
+        resolved_repo_paths.append(repo_path)
 
-    option_keys = [option["key"] for option in config.editor_menu_options]
-    keys_display = "/".join(option_keys)
-
-    while True:
-        print("\nSelect launcher ({keys}, q, Esc): ".format(keys=keys_display), end="", flush=True)
-        choice = get_single_char()
-        print()
-
-        if choice in ("q", "Q", "\x1b"):
-            return False, ""
-
-        option = find_editor_option(config, choice)
-        if option:
-            return True, option["function_name"]
-
-        print("{red}✗ Invalid choice. Use {keys}, q, or Esc.{reset}".format(
-            red=RED,
-            keys=keys_display,
-            reset=RESET,
-        ))
+    return resolved_repo_paths, missing_repo_names
 
 
 def validate_repos(config: AppConfig) -> bool:
@@ -194,7 +173,7 @@ def show_menu(config: AppConfig, state: AppState) -> None:
     print("  3. Stash changes and checkout all to main")
     print("  4. Checkout specific branches")
     print("  5. Run make command")
-    print("  6. Open a repo in code editor")
+    print("  6. Open repo in Kitty / nvim")
     print("  7. Show docker container info")
     print("  8. {label}".format(label=notifications_label))
     print("  9. Create new branches and checkout")
@@ -733,14 +712,15 @@ def option_5_run_make_command(config: AppConfig, state: AppState) -> None:
 
 
 def option_6_open_in_code_editor(config: AppConfig, state: AppState) -> None:
-    """Option 6: Open one repository in a configured code editor."""
+    """Option 6: Open one or more repositories in Kitty/nvim."""
     clear_screen()
     print("~" * 60)
-    print("  {orange}OPEN REPO IN CODE EDITOR{reset}".format(orange=ORANGE, reset=RESET))
+    print("  {orange}OPEN REPO IN KITTY / NVIM{reset}".format(orange=ORANGE, reset=RESET))
     print("~" * 60)
     print("\nAvailable repositories:\n")
 
     repo_paths = config.repo_paths_for_group(state.active_worktree_group)
+    batch_repo_paths, missing_batch_repo_names = get_kitty_batch_repo_paths(repo_paths)
 
     if len(repo_paths) > 9:
         print("{yellow}Too many repositories for single-key selection. Keep 9 or fewer repos.{reset}".format(
@@ -762,10 +742,22 @@ def option_6_open_in_code_editor(config: AppConfig, state: AppState) -> None:
         print("      {path}".format(path=repo_path))
         print()
 
+    batch_status = "✓" if not missing_batch_repo_names and all(
+        repo_path.exists() for repo_path in batch_repo_paths
+    ) else "✗"
+    print("  a. {status} {orange}Open api, collect, and create in Kitty tabs{reset}".format(
+        status=batch_status,
+        orange=ORANGE,
+        reset=RESET,
+    ))
+    print("      haysto-v2-api -> haysto-v2-collect -> haysto-v2-create")
+    print()
+
     print("\n" + "~" * 60)
 
     try:
-        print("\nSelect repository (1-{count}, q, Esc): ".format(count=len(repo_paths)), end="", flush=True)
+        prompt = "Select repository (1-{count}, a, q, Esc): ".format(count=len(repo_paths))
+        print("\n{prompt}".format(prompt=prompt), end="", flush=True)
 
         while True:
             choice = get_single_char()
@@ -776,50 +768,54 @@ def option_6_open_in_code_editor(config: AppConfig, state: AppState) -> None:
 
             print(choice)
 
+            if choice == "a":
+                if missing_batch_repo_names:
+                    print("{red}✗ Batch open is missing configured repos: {names}{reset}".format(
+                        red=RED,
+                        names=", ".join(missing_batch_repo_names),
+                        reset=RESET,
+                    ))
+                    print(prompt, end="", flush=True)
+                    continue
+                selected_repo_paths = batch_repo_paths
+                opening_label = ", ".join(repo_path.name for repo_path in selected_repo_paths)
+                break
+
             if choice.isdigit():
                 repo_num = int(choice)
                 if 1 <= repo_num <= len(repo_paths):
+                    selected_repo_paths = [repo_paths[repo_num - 1]]
+                    opening_label = selected_repo_paths[0].name
                     break
 
-            print("{red}✗ Invalid selection. Please choose 1-{count}, q, or Esc.{reset}".format(
+            print("{red}✗ Invalid selection. Please choose 1-{count}, a, q, or Esc.{reset}".format(
                 red=RED,
                 count=len(repo_paths),
                 reset=RESET,
             ))
-            print("Select repository (1-{count}, q, Esc): ".format(count=len(repo_paths)), end="", flush=True)
+            print(prompt, end="", flush=True)
 
-        selected_repo = repo_paths[repo_num - 1]
-
-        if not selected_repo.exists():
-            print("\n{red}✗ Repository does not exist: {path}{reset}".format(
+        missing_selected_paths = [str(repo_path) for repo_path in selected_repo_paths if not repo_path.exists()]
+        if missing_selected_paths:
+            print("\n{red}✗ Repository does not exist:{reset}".format(
                 red=RED,
-                path=selected_repo,
                 reset=RESET,
             ))
+            for missing_path in missing_selected_paths:
+                print("{red}  {path}{reset}".format(red=RED, path=missing_path, reset=RESET))
             wait_for_key()
             return
 
-        selected_launcher, function_name = select_code_editor_launcher(config)
-        if not selected_launcher:
-            return
-
-        launcher = get_editor_launcher(function_name)
-        if launcher is None:
-            print("\n{red}✗ Invalid editor function: '{name}'{reset}".format(
-                red=RED,
-                name=function_name,
-                reset=RESET,
-            ))
-            wait_for_key()
-            return
-
-        print("\nOpening {name} in code editor...".format(name=selected_repo.name))
-        returncode, message = launcher(selected_repo)
+        print("\nOpening {name} in Kitty...".format(name=opening_label))
+        if len(selected_repo_paths) == 1:
+            returncode, message = open_repo_in_kitty_tab(selected_repo_paths[0])
+        else:
+            returncode, message = open_repos_in_kitty_tabs(selected_repo_paths)
 
         if returncode == 0:
             print("{green}✓ {message}{reset}".format(green=GREEN, message=message, reset=RESET))
         else:
-            print("\n{red}✗ Failed to open code editor.{reset}".format(red=RED, reset=RESET))
+            print("\n{red}✗ Failed to open Kitty / nvim.{reset}".format(red=RED, reset=RESET))
             if message:
                 print("{red}  {message}{reset}".format(red=RED, message=message, reset=RESET))
 

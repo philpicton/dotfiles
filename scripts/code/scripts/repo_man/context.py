@@ -13,7 +13,6 @@ class AppConfig:
     ical_calendar_ids: List[str]
     rootdir: str
     repos: List[str]
-    editor_menu_options: List[Dict[str, str]]
     make_commands: List[Dict[str, str]]
     worktree_branch_template: str
     worktree_gitignored_copy_patterns: List[str]
@@ -29,7 +28,6 @@ class AppConfig:
         """Expand the editable constants into the derived paths the app uses."""
         self.ical_calendar_ids = list(self.ical_calendar_ids)
         self.repos = list(self.repos)
-        self.editor_menu_options = [dict(option) for option in self.editor_menu_options]
         self.make_commands = [dict(command) for command in self.make_commands]
         self.worktree_gitignored_copy_patterns = list(self.worktree_gitignored_copy_patterns)
         self.root_path = Path(self.rootdir).expanduser().resolve()
