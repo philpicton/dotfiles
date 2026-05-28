@@ -37,6 +37,7 @@ KITTY_BATCH_REPO_NAMES = (
     "haysto-v2-api",
     "haysto-v2-collect",
     "haysto-v2-create",
+    "haysto-v2-lib_shared",
 )
 
 
@@ -745,12 +746,12 @@ def option_6_open_in_code_editor(config: AppConfig, state: AppState) -> None:
     batch_status = "✓" if not missing_batch_repo_names and all(
         repo_path.exists() for repo_path in batch_repo_paths
     ) else "✗"
-    print("  a. {status} {orange}Open api, collect, and create in Kitty tabs{reset}".format(
+    print("  a. {status} {orange}Open api, collect, create, and shared lib in Kitty tabs{reset}".format(
         status=batch_status,
         orange=ORANGE,
         reset=RESET,
     ))
-    print("      haysto-v2-api -> haysto-v2-collect -> haysto-v2-create")
+    print("      haysto-v2-api -> haysto-v2-collect -> haysto-v2-create -> haysto-v2-lib_shared")
     print()
 
     print("\n" + "~" * 60)

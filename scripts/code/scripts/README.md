@@ -101,6 +101,7 @@ Inside that menu, press **a** to open these repos together in separate tabs, in 
 1. `haysto-v2-api`
 2. `haysto-v2-collect`
 3. `haysto-v2-create`
+4. `haysto-v2-lib_shared`
 
 ---
 
