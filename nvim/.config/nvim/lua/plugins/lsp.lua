@@ -4,7 +4,7 @@ return {
     opts = {
       servers = {
         cssls = {
-          filetypes = { "css", "scss", "less", "vue" },
+          filetypes = { "css", "scss", "less" },
         },
         vue_ls = {
           -- vue_ls owns the embedded HTML/CSS sections for .vue buffers.
