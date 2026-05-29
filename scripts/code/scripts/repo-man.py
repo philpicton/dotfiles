@@ -17,7 +17,7 @@ ICAL_CALENDAR_IDS = [
     "abc1234",
 ]
 
-# The folder where you store your repos, and any new worktrees created by this script.
+# The folder where you store your repos.
 # Customise this to your preferred location.
 ROOTDIR = "~/code/haya"
 
@@ -47,20 +47,6 @@ MAKE_COMMANDS = [
     {"key": "8", "label": "Shell into haysto-v2-api container", "command": "docker compose exec haysto-api bash"},
 ] # ---------------------------------------------------------------------------
 
-# Synthetic branch name used when creating one branch per worktree group.
-# Repo-man replaces {group} with the group name you enter.
-WORKTREE_BRANCH_TEMPLATE = "worktree-{group}/main"
-
-# Gitignored files to copy into a new worktree group.
-# Keep this allowlist small and focused on local config you genuinely want to
-# carry across, such as .env files. Dependencies and generated assets should be
-# installed or rebuilt inside the new worktree instead of being copied.
-WORKTREE_GITIGNORED_COPY_PATTERNS = [
-    ".env",
-    ".env.*",
-    "docker/nginx/certificates/certificate.*",
-]
-
 def build_app_config() -> AppConfig:
     """Build the shared application config from the editable constants above."""
     return AppConfig(
@@ -68,15 +54,13 @@ def build_app_config() -> AppConfig:
         rootdir=ROOTDIR,
         repos=REPOS,
         make_commands=MAKE_COMMANDS,
-        worktree_branch_template=WORKTREE_BRANCH_TEMPLATE,
-        worktree_gitignored_copy_patterns=WORKTREE_GITIGNORED_COPY_PATTERNS,
     )
 
 
 def main() -> None:
     """Build config and runtime state, then launch the TUI."""
     config = build_app_config()
-    state = AppState(active_worktree_group=config.main_worktree_group)
+    state = AppState()
     run_app(config, state)
 
 

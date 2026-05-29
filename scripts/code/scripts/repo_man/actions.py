@@ -1,13 +1,12 @@
 """Main menu actions and application entry flow for repo-man."""
 
-import os
 import subprocess
 import shutil
 import sys
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import List, Tuple
 
-from . import dashboard, worktrees
+from . import dashboard
 from .context import AppConfig, AppState
 from .shell import (
     input_with_default,
@@ -39,54 +38,6 @@ KITTY_BATCH_REPO_NAMES = (
     "haysto-v2-create",
     "haysto-v2-lib_shared",
 )
-
-
-def make_command_changes_docker_stack(command: str) -> bool:
-    """Return True when a configured make command is expected to restart the stack."""
-    stripped = command.strip()
-    docker_make_prefixes = (
-        "make init",
-        "make restart",
-        "make up",
-    )
-    return any(stripped.startswith(prefix) for prefix in docker_make_prefixes)
-
-
-def get_worktree_database_bootstrap_command() -> Dict[str, str]:
-    """Return the built-in command used to initialise a non-main worktree DB."""
-    return {
-        "key": "9",
-        "label": "Initialise current worktree database",
-        "command": (
-            "docker compose exec haysto-api php artisan migrate --seed"
-            " && docker compose exec haysto-api php artisan db:reseed-permissions"
-        ),
-    }
-
-
-def choose_extra_command_key(existing_commands: List[Dict[str, str]]) -> str:
-    """Pick a free single-key slot for a built-in dynamic menu command."""
-    used_keys = {command["key"] for command in existing_commands}
-    for candidate in ["9", "a", "b", "c", "d", "e", "f"]:
-        if candidate not in used_keys:
-            return candidate
-    return "z"
-
-
-def get_make_commands_for_current_group(config: AppConfig, state: AppState) -> List[Dict[str, str]]:
-    """Return the option 5 command list for the active worktree group."""
-    commands = [dict(command) for command in config.make_commands]
-    if state.active_worktree_group == config.main_worktree_group:
-        return commands
-
-    filtered_commands = [
-        command for command in commands
-        if command["command"].strip() != "make init"
-    ]
-    bootstrap_command = get_worktree_database_bootstrap_command()
-    bootstrap_command["key"] = choose_extra_command_key(filtered_commands)
-    filtered_commands.append(bootstrap_command)
-    return filtered_commands
 
 
 def get_kitty_batch_repo_paths(repo_paths: List[Path]) -> Tuple[List[Path], List[str]]:
@@ -178,36 +129,8 @@ def show_menu(config: AppConfig, state: AppState) -> None:
     print("  7. Show docker container info")
     print("  8. {label}".format(label=notifications_label))
     print("  9. Create new branches and checkout")
-    print("  w. Worktrees")
     print("\n" + "~" * 60)
     print("\n{greeting}".format(greeting=get_time_greeting()))
-
-    groups, _ = worktrees.discover_worktree_groups(config)
-    if len(groups) > 1:
-        print("Active worktree group: {orange}{group}{reset}".format(
-            orange=ORANGE,
-            group=state.active_worktree_group,
-            reset=RESET,
-        ))
-
-    docker_running_groups = worktrees.get_groups_with_running_docker_stacks(config, groups)
-    if docker_running_groups:
-        if len(docker_running_groups) == 1:
-            print("Docker active worktree: {orange}{group}{reset}".format(
-                orange=ORANGE,
-                group=docker_running_groups[0],
-                reset=RESET,
-            ))
-        else:
-            print("Docker active worktrees: {orange}{groups}{reset}".format(
-                orange=ORANGE,
-                groups=", ".join(docker_running_groups),
-                reset=RESET,
-            ))
-
-    if state.startup_notice:
-        print(state.startup_notice)
-        state.startup_notice = None
 
     if state.show_notifications:
         dashboard.refresh_cache_in_background(config, state)
@@ -247,7 +170,7 @@ def option_1_show_status(config: AppConfig, state: AppState) -> None:
     print("~" * 60)
     print()
 
-    repo_paths = config.repo_paths_for_group(state.active_worktree_group)
+    repo_paths = config.repo_paths
 
     for repo_path in repo_paths:
         if not repo_path.exists():
@@ -316,7 +239,7 @@ def option_2_reset_to_main(config: AppConfig, state: AppState) -> None:
     print("  {orange}RESETTING REPOSITORIES...{reset}".format(orange=ORANGE, reset=RESET))
     print("~" * 60)
 
-    repo_paths = config.repo_paths_for_group(state.active_worktree_group)
+    repo_paths = config.repo_paths
 
     for repo_path in repo_paths:
         if not repo_path.exists():
@@ -380,7 +303,7 @@ def option_3_stash_to_main(config: AppConfig, state: AppState) -> None:
     print("  {orange}STASHING AND SWITCHING TO MAIN...{reset}".format(orange=ORANGE, reset=RESET))
     print("~" * 60)
 
-    repo_paths = config.repo_paths_for_group(state.active_worktree_group)
+    repo_paths = config.repo_paths
 
     for repo_path in repo_paths:
         if not repo_path.exists():
@@ -453,7 +376,7 @@ def option_4_checkout_branches(config: AppConfig, state: AppState) -> None:
 
     all_clean = True
     dirty_repos = []
-    repo_paths = config.repo_paths_for_group(state.active_worktree_group)
+    repo_paths = config.repo_paths
 
     for repo_path in repo_paths:
         if not repo_path.exists():
@@ -567,14 +490,14 @@ def option_4_checkout_branches(config: AppConfig, state: AppState) -> None:
 
 
 def option_5_run_make_command(config: AppConfig, state: AppState) -> None:
-    """Option 5: Run one configured make command in the parent repository."""
+    """Option 5: Run one configured make command in the main repository."""
     clear_screen()
     print("~" * 60)
     print("  {orange}RUN MAKE COMMAND{reset}".format(orange=ORANGE, reset=RESET))
     print("~" * 60)
     print()
 
-    parent_repo = config.parent_repo_path_for_group(state.active_worktree_group)
+    parent_repo = config.parent_repo_path()
 
     if not parent_repo.exists():
         print("{red}✗ Parent repository not found: {repo}{reset}".format(
@@ -595,17 +518,10 @@ def option_5_run_make_command(config: AppConfig, state: AppState) -> None:
         wait_for_key()
         return
 
-    available_commands = get_make_commands_for_current_group(config, state)
+    available_commands = config.make_commands
 
     print("Repository: {repo}".format(repo=parent_repo))
     print("\nSelect a command to run:")
-
-    if state.active_worktree_group != config.main_worktree_group:
-        print("{yellow}Non-main worktree detected: make init is hidden here because it is not worktree-safe.{reset}".format(
-            yellow=YELLOW,
-            reset=RESET,
-        ))
-        print("Use the worktrees menu to initialise the active worktree stack instead.\n")
 
     for cmd in available_commands:
         print("  {key}. {label}".format(key=cmd["key"], label=cmd["label"]))
@@ -645,57 +561,17 @@ def option_5_run_make_command(config: AppConfig, state: AppState) -> None:
     print("~" * 60)
     print()
 
-    original_dir = os.getcwd()
     try:
-        if make_command_changes_docker_stack(selected_cmd["command"]):
-            stopped_groups, warnings = worktrees.stop_other_running_docker_stacks(
-                config,
-                state.active_worktree_group,
-            )
-            for group in stopped_groups:
-                print("Stopped docker stack for group: {group}".format(group=group))
-            for warning in warnings:
-                print("{yellow}⚠️  {warning}{reset}".format(
-                    yellow=YELLOW,
-                    warning=warning,
-                    reset=RESET,
-                ))
-
-        compose_env = worktrees.build_compose_environment(config, state.active_worktree_group, parent_repo)
-        os.chdir(parent_repo)
         result = subprocess.run(
             selected_cmd["command"],
             cwd=parent_repo,
             shell=True,
-            env=compose_env,
         )
         returncode = result.returncode
 
-        dependency_warning = ""
-        if (
-            returncode == 0
-            and make_command_changes_docker_stack(selected_cmd["command"])
-            and state.active_worktree_group != config.main_worktree_group
-        ):
-            deps_ok, deps_message = worktrees.refresh_worktree_api_dependencies(
-                config,
-                state.active_worktree_group,
-                parent_repo,
-            )
-            if not deps_ok:
-                dependency_warning = deps_message
-
-        os.chdir(original_dir)
-
         print("\n" + "~" * 60)
-        if returncode == 0 and not dependency_warning:
+        if returncode == 0:
             print("{green}✓ Command completed successfully{reset}".format(green=GREEN, reset=RESET))
-        elif returncode == 0:
-            print("{yellow}⚠️  Command completed, but API dependency refresh failed: {message}{reset}".format(
-                yellow=YELLOW,
-                message=dependency_warning,
-                reset=RESET,
-            ))
         else:
             print("{red}✗ Command failed with exit code {code}{reset}".format(
                 red=RED,
@@ -704,10 +580,6 @@ def option_5_run_make_command(config: AppConfig, state: AppState) -> None:
             ))
     except Exception as exc:
         print("{red}✗ Error running command: {error}{reset}".format(red=RED, error=exc, reset=RESET))
-        try:
-            os.chdir(original_dir)
-        except Exception:
-            pass
 
     wait_for_key()
 
@@ -720,7 +592,7 @@ def option_6_open_in_code_editor(config: AppConfig, state: AppState) -> None:
     print("~" * 60)
     print("\nAvailable repositories:\n")
 
-    repo_paths = config.repo_paths_for_group(state.active_worktree_group)
+    repo_paths = config.repo_paths
     batch_repo_paths, missing_batch_repo_names = get_kitty_batch_repo_paths(repo_paths)
 
     if len(repo_paths) > 9:
@@ -994,7 +866,7 @@ def option_9_create_branches(config: AppConfig, state: AppState) -> None:
 
     summary = []
     last_branch_name = None
-    repo_paths = config.repo_paths_for_group(state.active_worktree_group)
+    repo_paths = config.repo_paths
 
     for repo_path in repo_paths:
         if not repo_path.exists():
@@ -1154,13 +1026,11 @@ def run_app(config: AppConfig, state: AppState) -> None:
         print("\n{red}✗ Exiting due to repository validation issues.{reset}".format(red=RED, reset=RESET))
         sys.exit(1)
 
-    worktrees.initialise_active_worktree_group(config, state)
-
     while True:
         show_menu(config, state)
 
         try:
-            print("\nSelect option (1-9, w, q to quit): ", end="", flush=True)
+            print("\nSelect option (1-9, q to quit): ", end="", flush=True)
             choice = get_single_char()
             print()
 
@@ -1184,14 +1054,12 @@ def run_app(config: AppConfig, state: AppState) -> None:
                     dashboard.run_cache_fetch(config, state)
             elif choice == "9":
                 option_9_create_branches(config, state)
-            elif choice in ("w", "W"):
-                worktrees.option_w_worktrees(config, state)
             elif choice in ("q", "Q", "\x1b"):
                 clear_screen()
                 print("Goodbye! 👋")
                 sys.exit(0)
             else:
-                print("\n{red}✗ Invalid option. Please select 1-9 or w.{reset}".format(red=RED, reset=RESET))
+                print("\n{red}✗ Invalid option. Please select 1-9.{reset}".format(red=RED, reset=RESET))
                 wait_for_key()
         except KeyboardInterrupt:
             clear_screen()
