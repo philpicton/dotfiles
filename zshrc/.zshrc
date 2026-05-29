@@ -115,11 +115,6 @@ fi
 
 export YAZI_IMAGE_ADAPTER="kitty"
 
-# php homebrew path
-if [[ -n "$BREW_PREFIX" && -d "$BREW_PREFIX/opt/php@8.3" ]]; then
-    export PATH="$BREW_PREFIX/opt/php@8.3/bin:$PATH"
-    export PATH="$BREW_PREFIX/opt/php@8.3/sbin:$PATH"
-fi
 
 # zsh plugins
 if [[ -n "$BREW_PREFIX" ]]; then
