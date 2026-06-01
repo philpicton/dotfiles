@@ -37,6 +37,7 @@ cask "slack"
 cask "mysqlworkbench"
 cask "postman"
 cask "1password"
+cask "font-maple-mono"
 
 # Optional Formulae & Casks
 brew "php"
