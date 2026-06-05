@@ -1,0 +1,22 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  // Code formatting
+  "formatter": true,
+  // LSP (Language Server Protocol) support
+  "lsp": true,
+  // ignore busy directories for file watcher
+  "watcher": {
+    "ignore": [
+      "node_modules/**",
+      "dist/**",
+      ".git/**",
+      ".nuxt/**",
+      "vendor/**",
+    ],
+  },
+  "compaction": {
+    "auto": true,
+    "prune": true,
+    "reserved": 10000,
+  },
+}
