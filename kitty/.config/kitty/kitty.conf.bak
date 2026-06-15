@@ -1,0 +1,53 @@
+# BEGIN_KITTY_THEME
+# Catppuccin-Mocha
+include current-theme.conf
+# END_KITTY_THEME
+#
+# 
+disable_ligatures never
+font_size 14
+# background_opacity 0.9
+
+editor /opt/homebrew/bin/nvim
+
+# remove titlebar, add padding to top and sides
+hide_window_decorations titlebar-only
+macos_titlebar_color background
+window_padding_width 5 5 0 5 
+
+# send notifications when long running commands finish, if 10+ seconds
+notify_on_cmd_finish invisible 10.0
+
+# further improve perf
+input_delay 0
+repaint_delay 2
+
+# allow programmatic control of kitty
+allow_remote_control yes
+
+
+# managing tabs and windows
+# set up alias
+action_alias launch_tab launch --type=tab --cwd=current
+# launch nvim in new tab in cwd
+map f1 launch_tab n
+# open split below in cwd
+map f2 launch --location=split --cwd=current
+# new tab in cwd
+map f5 launch_tab
+
+# Switch focus to the neighboring window in the indicated direction
+map super+left neighboring_window left
+map super+right neighboring_window right
+map super+up neighboring_window up
+map super+down neighboring_window down
+
+# BEGIN_KITTY_FONTS
+# font_family      family='Maple Mono' features=+calt
+font_family      family='Fira Code' features=+calt
+bold_font        auto
+italic_font      auto
+bold_italic_font auto
+# END_KITTY_FONTS
+#
+# to debug fonts: https://github.com/kovidgoyal/kitty/issues/1845

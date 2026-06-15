@@ -19,6 +19,7 @@ Written in Python. Vibe coded with 🧡
 - Open a repo directly in `nvim` in a new Kitty tab
 - Open `haysto-v2-api`, `haysto-v2-collect`, `haysto-v2-create`, and `haysto-v2-lib_shared` together in separate Kitty tabs
 - Show Docker container overview + one-key cleanup actions
+- Run the multi-repo branch checkout workflow as a standalone Go CLI
 
 ---
 
@@ -31,6 +32,7 @@ Written in Python. Vibe coded with 🧡
 ### Feature-dependent
 
 - `fzf` (for branch picker in option 4)
+- Go toolchain (for the standalone `branch-checkout` CLI)
 - Docker CLI + running daemon (for option 5 and option 7)
 - `kitty` in your `PATH` (option 6 launches `nvim` inside Kitty tabs)
 - Github CLI (gh) installed and logged in (to show requested reviews and unread notifications)

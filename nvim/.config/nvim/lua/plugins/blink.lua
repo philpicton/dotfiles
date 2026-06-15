@@ -9,7 +9,7 @@ return {
       -- see the "default configuration" section below for full documentation on how to define
       -- your own keymap.
       keymap = {
-        preset = "enter",
+        preset = "super-tab",
         -- ["<S-CR>"] = { "select_and_accept" },
         -- ["<CR>"] = { "fallback" },
         -- ["<Tab>"] = {

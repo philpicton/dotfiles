@@ -19,7 +19,7 @@ ICAL_CALENDAR_IDS = [
 
 # The folder where you store your repos.
 # Customise this to your preferred location.
-ROOTDIR = "~/code/haya"
+ROOTDIR = "~/code"
 
 # Main repository folder names relative to the ROOTDIR.
 # haysto-v2 must be first, and be found at ROOTDIR/haysto-v2 for the script to work correctly.
