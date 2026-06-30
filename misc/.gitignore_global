@@ -1,4 +1,12 @@
 .DS_Store
 
+# Don't commit AI instructions
+# in repos. 
 .github/copilot-instructions.md
 AGENTS.md
+
+# Override the default docker-compose restart-policy 
+# so that my containers restart when I boot up. 
+~/code/haysto-v2/docker-compose.override.yml
+
+
