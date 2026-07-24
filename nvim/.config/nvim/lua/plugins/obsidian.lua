@@ -13,7 +13,7 @@ return {
     workspaces = {
       {
         name = "Haysto",
-        path = "/Users/phil/Obsidian/Haysto",
+        path = "/Users/phil/Documents/Obsidian/Haysto",
       },
     },
   },
