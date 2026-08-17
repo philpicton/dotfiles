@@ -41,8 +41,10 @@ function gfc() {
     git fetch && git checkout $1 
 }
 
-# fetch
+# git aliases
 alias gf="git fetch"
+alias gp="git pull"
+alias gpf="git push --force-with-lease"
 
 # neovim
 alias n="nvim"
@@ -51,7 +53,99 @@ alias n="nvim"
 alias hh="python3 ~/code/scripts/repo-man.py"
 
 # haya branch checkout
-alias bb="~/code/scripts/branch-checkout/branch-checkout"
+alias bco="~/code/scripts/branch-checkout/branch-checkout"
+
+if (( ! ${+HAYA_REPOS} )); then
+    typeset -ra HAYA_REPOS=(
+        "$HOME/code/haysto-v2"
+        "$HOME/code/haysto-v2/haysto-v2-api"
+        "$HOME/code/haysto-v2/haysto-v2-collect"
+        "$HOME/code/haysto-v2/haysto-v2-create"
+        "$HOME/code/haysto-v2/lib/js/haysto-v2-lib_shared"
+    )
+fi
+
+# Open the primary Haya repositories in separate Kitty tabs running Neovim.
+function jj() {
+    local repo
+
+    if ! command -v kitty > /dev/null; then
+        print -u2 'kitty is required to open Haya repositories.'
+        return 1
+    fi
+
+    for repo in "${HAYA_REPOS[@]}"; do
+        if [[ ! -d "$repo" ]]; then
+            print -u2 "Repository not found: $repo"
+            return 1
+        fi
+    done
+
+    for repo in "${HAYA_REPOS[@]}"; do
+        kitty @ launch \
+            --type=tab \
+            --cwd="$repo" \
+            --tab-title="🧡 ${repo:t}" \
+            --copy-env \
+            --dont-take-focus \
+            --add-to-session \
+            ! nvim
+    done
+}
+
+# Show the current branch and working-tree status for the primary Haya repositories.
+function ss() {
+    local repo branch git_status
+
+    for repo in "${HAYA_REPOS[@]}"; do
+        print -P "\n%F{208}${repo:t}%f"
+        print -- '------------------------------------------------------------'
+
+        if [[ ! -d "$repo" ]]; then
+            print -P '  %F{red}Repository not found%f'
+            continue
+        fi
+
+        branch=$(git -C "$repo" branch --show-current) || {
+            print -P '  %F{red}Unable to determine branch%f'
+            continue
+        }
+        printf '  Branch: \033[3m%s\033[23m\n' "$branch"
+        print
+
+        git_status=$(git -C "$repo" status --short) || {
+            print -P '  %F{red}Unable to get status%f'
+            continue
+        }
+        if [[ -n "$git_status" ]]; then
+            print -P "%F{yellow}🟡  ${git_status}%f" | sed 's/^/  /'
+        else
+            print -P '  %F{green}🧼 Clean working directory%f'
+        fi
+    done
+}
+
+# List the aliases and functions defined in this configuration.
+function list() {
+    printf '%s\n' \
+        'Functions:' \
+        '  y           Open yazi and change to the directory selected when it exits.' \
+        '  gch         Select a local or remote Git branch with fzf and check it out.' \
+        '  gfc         Fetch from Git, then check out the branch supplied as its argument.' \
+        '  jj          Open Haya repositories in Kitty tabs running Neovim.' \
+        '  ss          Show Git status for the primary Haya repositories.' \
+        '  gchp        Select a Git branch or tag with an fzf commit-log preview and check it out.' \
+        '  list        Print this list of aliases and functions.' \
+        '  ctrl-r      Search zsh history' \
+        '' \
+        'Aliases:' \
+        '  gf          git fetch' \
+        '  gp          git pull' \
+        '  gpf         git push --force-with-lease' \
+        '  n           nvim' \
+        '  hh          Run the Haya repository manager.' \
+        '  bco         Run the Haya branch checkout helper.'
+}
 
 # Opens git branches in fuzzy finder and shows a list of the commits
 # which are different from HEAD (your current checkout)
@@ -117,6 +211,11 @@ fi
 
 export YAZI_IMAGE_ADAPTER="kitty"
 
+# oh-my-posh WIP 
+# if [ "$TERM_PROGRAM" != "Apple_Terminal" ]; then
+#   eval "$(oh-my-posh init zsh)"
+# eval "$(oh-my-posh init zsh --config ~/.config/omp/config.omp.json)"
+# fi
 
 # zsh plugins
 if [[ -n "$BREW_PREFIX" ]]; then

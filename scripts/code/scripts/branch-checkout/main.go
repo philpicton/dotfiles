@@ -44,7 +44,7 @@ func main() {
 	}
 
 	if err := run(); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		fmt.Fprintf(os.Stderr, "❌ Error: %v\n", err)
 		os.Exit(1)
 	}
 }
@@ -65,21 +65,21 @@ func run() error {
 	}
 
 	if len(dirtyRepos) > 0 {
-		fmt.Println("[warn] The following repositories have uncommitted changes:\n")
+		fmt.Println("⚠️ The following repositories have uncommitted changes:\n")
 		for _, repoName := range dirtyRepos {
-			fmt.Printf("  [error] %s\n", repoName)
+			fmt.Printf(" • %s\n", repoName)
 		}
 		fmt.Println("\nPlease commit, stash, or reset changes before using this tool.")
 		return errors.New("aborting due to uncommitted changes")
 	}
 
-	fmt.Println("[ok] All repositories are clean. Proceeding.")
+	fmt.Println("✅ All repositories are clean. Proceeding.")
 
 	for _, repoPath := range repoPaths {
 		runRepoFlow(repoPath)
 	}
 
-	fmt.Println("\n[ok] Branch checkout complete")
+	fmt.Println("✅ Branch checkout complete")
 	return nil
 }
 
@@ -157,14 +157,14 @@ func runRepoFlow(repoPath string) {
 	fmt.Println("  - Fetching from remote...")
 	fetchResult := runCommand(repoPath, "git", "fetch", "--all")
 	if fetchResult.err != nil {
-		fmt.Printf("    [error] %v\n", fetchResult.err)
+		fmt.Printf("    ❌ %v\n", fetchResult.err)
 		return
 	}
 	if fetchResult.exitCode != 0 {
-		fmt.Printf("    [error] %s\n", commandMessage(fetchResult, "fetch failed"))
+		fmt.Printf("    ❌ %s\n", commandMessage(fetchResult, "fetch failed"))
 		return
 	}
-	fmt.Println("    [ok] Fetch complete")
+	fmt.Println("    ✅ Fetch complete")
 
 	currentBranchResult := runCommand(repoPath, "git", "rev-parse", "--abbrev-ref", "HEAD")
 	if currentBranchResult.err == nil && currentBranchResult.exitCode == 0 {
@@ -174,11 +174,11 @@ func runRepoFlow(repoPath string) {
 	fmt.Println()
 	selected, branchName, err := pickBranchWithFzf(repoPath)
 	if err != nil {
-		fmt.Printf("    [error] %v\n", err)
+		fmt.Printf("    ❌ %v\n", err)
 		return
 	}
 	if !selected {
-		fmt.Println("    [info] Skipped, staying on current branch")
+		fmt.Println("     Skipped, staying on current branch")
 		return
 	}
 
@@ -186,28 +186,28 @@ func runRepoFlow(repoPath string) {
 	checkoutResult := runCommand(repoPath, "git", "checkout", branchName)
 	printCapturedOutput(checkoutResult)
 	if checkoutResult.err != nil {
-		fmt.Printf("    [error] %v\n", checkoutResult.err)
+		fmt.Printf("    ❌ %v\n", checkoutResult.err)
 		return
 	}
 	if checkoutResult.exitCode != 0 {
-		fmt.Printf("    [error] %s\n", commandMessage(checkoutResult, "checkout failed"))
+		fmt.Printf("    ❌ %s\n", commandMessage(checkoutResult, "checkout failed"))
 		return
 	}
 
-	fmt.Printf("    [ok] Successfully checked out %q\n", branchName)
+	fmt.Printf("    ✅ Successfully checked out %q\n", branchName)
 	fmt.Println("  - Pulling latest changes...")
 
 	pullResult := runCommand(repoPath, "git", "pull", "--ff-only")
 	if pullResult.err != nil {
-		fmt.Printf("    [error] %v\n", pullResult.err)
+		fmt.Printf("    ❌ %v\n", pullResult.err)
 		return
 	}
 	if pullResult.exitCode != 0 {
-		fmt.Printf("    [error] %s\n", commandMessage(pullResult, "pull failed"))
+		fmt.Printf("    ❌ %s\n", commandMessage(pullResult, "pull failed"))
 		return
 	}
 
-	fmt.Println("    [ok] Pulled latest changes")
+	fmt.Println("    ✅ Pulled latest changes")
 }
 
 func pickBranchWithFzf(repoPath string) (bool, string, error) {
