@@ -36,3 +36,7 @@ end, { desc = "Toggle LazyDocker", noremap = true, silent = true })
 
 -- Save file with Cmd+S (macOS) or Ctrl+S
 vim.keymap.set({ "n", "i", "v" }, "<D-s>", "<cmd>w<CR>", { desc = "Save file" })
+
+vim.keymap.set("n", "<leader>bD", "<cmd>Dash<cr>", {
+  desc = "Close all buffers and open dashboard",
+})

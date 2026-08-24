@@ -34,6 +34,7 @@ return {
       end,
     },
     dashboard = {
+      width = 100,
       preset = {
         header = [[
                                                 
@@ -73,6 +74,7 @@ return {
           { icon = " ", key = "o", desc = "Open obsidian note", action = ":Obsidian quick_switch" },
           { icon = " ", key = "c", desc = "Config", action = ":lua Snacks.dashboard.pick('files', {cwd = vim.fn.stdpath('config')})" },
           { icon = " ", key = "s", desc = "Restore Session", section = "session" },
+          { icon = " ", key = "b", desc = "Browse to Repo", action = ":lua Snacks.gitbrowse()" },
           { icon = "󰒲 ", key = "l", desc = "Lazy", action = ":Lazy" },
           { icon = " ", key = "q", desc = "Quit", action = ":qa" },
         },
@@ -80,23 +82,16 @@ return {
 
       sections = {
         { section = "header" },
-        { section = "keys", gap = 1, padding = 2 },
 
-        -- Section to show CWD
         function()
           local cwd = vim.fn.fnamemodify(vim.fn.getcwd(), ":~")
-
           return {
-            text = {
-              { "  ", hl = "SnacksDashboardIcon" },
-              { cwd, hl = "SnacksDashboardDesc" },
-            },
-            align = "center",
+            icon = " ",
+            title = cwd,
             padding = 1,
           }
         end,
 
-        -- Section to show concise git status
         function()
           local root = Snacks.git.get_root()
           if not root then
@@ -110,58 +105,59 @@ return {
           end
 
           local branch = git({ "branch", "--show-current" })
-          local status = git({ "status", "--porcelain" })
 
-          local modified = 0
-          local added = 0
-          local deleted = 0
-          local untracked = 0
-
-          for line in status:gmatch("[^\r\n]+") do
-            local x, y = line:sub(1, 1), line:sub(2, 2)
-
-            if x == "?" and y == "?" then
-              untracked = untracked + 1
-            elseif x == "D" or y == "D" then
-              deleted = deleted + 1
-            elseif x == "A" or y == "A" then
-              added = added + 1
-            else
-              modified = modified + 1
-            end
-          end
-
-          local parts = { " " .. branch }
-
-          if modified > 0 then
-            table.insert(parts, modified .. " modified")
-          end
-
-          if added > 0 then
-            table.insert(parts, added .. " added")
-          end
-
-          if deleted > 0 then
-            table.insert(parts, deleted .. " deleted")
-          end
-
-          if untracked > 0 then
-            table.insert(parts, untracked .. " untracked")
-          end
-
+          local icon = branch and " " or " "
           return {
-            text = {
-              { " ", hl = "SnacksDashboardIcon" },
-              { branch, hl = "SnacksDashboardDesc" },
-
-              modified > 0 and { "  •  " .. modified .. " modified", hl = "SnacksDashboardDesc" } or nil,
-              added > 0 and { "  •  " .. added .. " added", hl = "SnacksDashboardDesc" } or nil,
-              deleted > 0 and { "  •  " .. deleted .. " deleted", hl = "SnacksDashboardDesc" } or nil,
-              untracked > 0 and { "  •  " .. untracked .. " untracked", hl = "SnacksDashboardDesc" } or nil,
-            },
-            align = "center",
-            padding = 1,
+            icon = icon,
+            title = branch or "Not in a git repo",
+            padding = 2,
           }
+        end,
+        { section = "keys", gap = 1, padding = 2 },
+
+        function()
+          local in_git = Snacks.git.get_root() ~= nil
+          local cmds = {
+            {
+              title = "GH Notifications",
+              cmd = "gh notify -asf 'Haysto' -n 8",
+              action = function()
+                vim.ui.open("https://github.com/notifications?query=org%3AHaysto")
+              end,
+              key = "N",
+              icon = " ",
+              height = 20,
+              enabled = true,
+            },
+            {
+              icon = " ",
+              title = "My open PRs",
+              cmd = "gh pr list -L 5 --author @me",
+              key = "P",
+              action = function()
+                vim.fn.jobstart("gh pr list --web --author @me", { detach = true })
+              end,
+              height = 7,
+            },
+            {
+              icon = " ",
+              title = "Git Status",
+              cmd = "if [ -z \"$(git status --porcelain)\" ]; then echo 'Working tree clean'; else git --no-pager diff --stat -B -M -C; fi",
+              height = 10,
+            },
+          }
+          return vim.tbl_map(function(cmd)
+            return vim.tbl_extend("force", {
+              pane = 2,
+              section = "terminal",
+              enabled = in_git,
+              padding = 1,
+              ttl = 5 * 60,
+              indent = 3,
+              width = 90,
+              footer = false,
+            }, cmd)
+          end, cmds)
         end,
       },
     },
