@@ -61,6 +61,7 @@ if (( ! ${+HAYA_REPOS} )); then
         "$HOME/code/haysto-v2/haysto-v2-api"
         "$HOME/code/haysto-v2/haysto-v2-collect"
         "$HOME/code/haysto-v2/haysto-v2-create"
+        "$HOME/code/haysto-v2/haysto-v2-collaborate"
         "$HOME/code/haysto-v2/lib/js/haysto-v2-lib_shared"
     )
 fi
