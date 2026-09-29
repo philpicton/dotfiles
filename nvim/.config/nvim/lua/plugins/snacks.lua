@@ -116,6 +116,13 @@ return {
         { section = "keys", gap = 1, padding = 2 },
 
         function()
+          -- below this width there isn't room for a second column alongside
+          -- the ~100-wide pane 1, so hide the terminal panel entirely rather
+          -- than have it overlap the logo/menu
+          if vim.o.columns < 200 then
+            return {}
+          end
+
           local in_git = Snacks.git.get_root() ~= nil
           local cmds = {
             {
@@ -146,17 +153,18 @@ return {
               height = 10,
             },
           }
+          local defaults = {
+            pane = 2,
+            section = "terminal",
+            enabled = in_git,
+            padding = 1,
+            ttl = 5 * 60,
+            indent = 3,
+            width = 90,
+            footer = false,
+          }
           return vim.tbl_map(function(cmd)
-            return vim.tbl_extend("force", {
-              pane = 2,
-              section = "terminal",
-              enabled = in_git,
-              padding = 1,
-              ttl = 5 * 60,
-              indent = 3,
-              width = 90,
-              footer = false,
-            }, cmd)
+            return vim.tbl_extend("force", defaults, cmd)
           end, cmds)
         end,
       },
