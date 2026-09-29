@@ -1,0 +1,7 @@
+FROM devstral-small-2:24b-instruct-2512-q4_K_M
+
+PARAMETER temperature 0.15
+PARAMETER top_p 0.95
+PARAMETER top_k 40
+PARAMETER repeat_penalty 1.05
+
