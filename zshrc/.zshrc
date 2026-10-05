@@ -47,9 +47,6 @@ alias gf="git fetch"
 # neovim
 alias n="nvim"
 
-# haya repo man
-alias haya="python3 ~/code/scripts/repo-man.py"
-alias hh="python3 ~/code/scripts/repo-man.py"
 
 # Opens git branches in fuzzy finder and shows a list of the commits
 # which are different from HEAD (your current checkout)
