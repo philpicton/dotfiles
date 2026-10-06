@@ -38,6 +38,7 @@ cask "mysqlworkbench"
 cask "postman"
 cask "1password"
 cask "font-maple-mono"
+cask "whichspace"
 
 # Optional Formulae & Casks
 brew "php"
