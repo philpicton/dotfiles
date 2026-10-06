@@ -114,59 +114,6 @@ return {
           }
         end,
         { section = "keys", gap = 1, padding = 2 },
-
-        function()
-          -- below this width there isn't room for a second column alongside
-          -- the ~100-wide pane 1, so hide the terminal panel entirely rather
-          -- than have it overlap the logo/menu
-          if vim.o.columns < 200 then
-            return {}
-          end
-
-          local in_git = Snacks.git.get_root() ~= nil
-          local cmds = {
-            {
-              title = "GH Notifications",
-              cmd = "gh notify -asf 'Haysto' -n 8",
-              action = function()
-                vim.ui.open("https://github.com/notifications?query=org%3AHaysto")
-              end,
-              key = "N",
-              icon = " ",
-              height = 20,
-              enabled = true,
-            },
-            {
-              icon = " ",
-              title = "My open PRs",
-              cmd = "gh pr list -L 5 --author @me",
-              key = "P",
-              action = function()
-                vim.fn.jobstart("gh pr list --web --author @me", { detach = true })
-              end,
-              height = 7,
-            },
-            {
-              icon = " ",
-              title = "Git Status",
-              cmd = "if [ -z \"$(git status --porcelain)\" ]; then echo 'Working tree clean'; else git --no-pager diff --stat -B -M -C; fi",
-              height = 10,
-            },
-          }
-          local defaults = {
-            pane = 2,
-            section = "terminal",
-            enabled = in_git,
-            padding = 1,
-            ttl = 5 * 60,
-            indent = 3,
-            width = 90,
-            footer = false,
-          }
-          return vim.tbl_map(function(cmd)
-            return vim.tbl_extend("force", defaults, cmd)
-          end, cmds)
-        end,
       },
     },
   },

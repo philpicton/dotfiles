@@ -66,7 +66,7 @@ if (( ! ${+HAYA_REPOS} )); then
     )
 fi
 
-alias tt ="tmux attach -t haya"
+alias tt="tmux attach -t haya"
 
 # Open the primary Haya repositories in separate Kitty tabs running Neovim.
 # function jj() {
@@ -174,8 +174,7 @@ function list() {
         '  y           Open yazi and change to the directory selected when it exits.' \
         '  gch         Select a local or remote Git branch with fzf and check it out.' \
         '  gfc         Fetch from Git, then check out the branch supplied as its argument.' \
-        '  jj          Open Haya repositories in Kitty tabs running Neovim.' \
-        '  th          Create/attach persistent Haya tmux session (one named window per repo).' \
+        '  jj          Create/attach persistent Haya tmux session (one named window per repo, nvim in each).' \
         '  ss          Show Git status for the primary Haya repositories.' \
         '  gchp        Select a Git branch or tag with an fzf commit-log preview and check it out.' \
         '  list        Print this list of aliases and functions.' \
