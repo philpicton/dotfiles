@@ -47,4 +47,6 @@
 
 ## Plugins (TPM)
 
-- Ctrl-b I — install, Ctrl-b U — update, Ctrl-b Alt-u — uninstall
+- Ctrl-b I — install
+- Ctrl-b U — update
+- Ctrl-b Alt-u — uninstall
