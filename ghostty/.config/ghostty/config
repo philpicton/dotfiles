@@ -1,8 +1,9 @@
 
-theme=catppuccin-mocha
-font-family=FiraCode Nerd Font Mono
-font-size=16
-background-opacity=0.95
+theme=Catppuccin Mocha
+font-family=MonoLisa
+font-size=14
+font-feature=+calt,+ss02
+font-thicken
 
 keybind= super+shift+l=next_tab
 keybind= super+shift+h=previous_tab
