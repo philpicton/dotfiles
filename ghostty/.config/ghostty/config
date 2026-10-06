@@ -1,9 +1,11 @@
-
 theme=Catppuccin Mocha
 font-family=MonoLisa
 font-size=14
+font-thicken=true
+font-thicken-strength=255
+font-variation=wght=400
 font-feature=+calt,+ss02
-font-thicken
 
-keybind= super+shift+l=next_tab
-keybind= super+shift+h=previous_tab
+macos-titlebar-style=tabs
+window-theme=dark
+
