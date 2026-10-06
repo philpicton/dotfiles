@@ -66,12 +66,44 @@ if (( ! ${+HAYA_REPOS} )); then
     )
 fi
 
-# Open the primary Haya repositories in separate Kitty tabs running Neovim.
-function jj() {
-    local repo
+alias tt ="tmux attach -t haya"
 
-    if ! command -v kitty > /dev/null; then
-        print -u2 'kitty is required to open Haya repositories.'
+# Open the primary Haya repositories in separate Kitty tabs running Neovim.
+# function jj() {
+#     local repo
+#
+#     if ! command -v kitty > /dev/null; then
+#         print -u2 'kitty is required to open Haya repositories.'
+#         return 1
+#     fi
+#
+#     for repo in "${HAYA_REPOS[@]}"; do
+#         if [[ ! -d "$repo" ]]; then
+#             print -u2 "Repository not found: $repo"
+#             return 1
+#         fi
+#     done
+#
+#     for repo in "${HAYA_REPOS[@]}"; do
+#         kitty @ launch \
+#             --type=tab \
+#             --cwd="$repo" \
+#             --tab-title="🧡 ${repo:t}" \
+#             --copy-env \
+#             --dont-take-focus \
+#             --add-to-session \
+#             ! nvim
+#     done
+# }
+
+# Create (if needed) and attach to the persistent Haya tmux session.
+# One named window per repo in HAYA_REPOS. Names persist via
+# automatic-rename/allow-rename off in tmux.conf.
+function jj() {
+    local repo name session='haya' first=1
+
+    if ! command -v tmux > /dev/null; then
+        print -u2 'tmux is required.'
         return 1
     fi
 
@@ -82,16 +114,25 @@ function jj() {
         fi
     done
 
-    for repo in "${HAYA_REPOS[@]}"; do
-        kitty @ launch \
-            --type=tab \
-            --cwd="$repo" \
-            --tab-title="🧡 ${repo:t}" \
-            --copy-env \
-            --dont-take-focus \
-            --add-to-session \
-            ! nvim
-    done
+    if ! tmux has-session -t "$session" 2>/dev/null; then
+        for repo in "${HAYA_REPOS[@]}"; do
+            name="${repo:t}"
+            if (( first )); then
+                tmux new-session -d -s "$session" -n "$name" -c "$repo"
+                first=0
+            else
+                tmux new-window -t "$session" -n "$name" -c "$repo"
+            fi
+            tmux send-keys -t "$session:$name" 'nvim' Enter
+        done
+        tmux select-window -t "$session:1"
+    fi
+
+    if [[ -n "$TMUX" ]]; then
+        tmux switch-client -t "$session"
+    else
+        tmux attach -t "$session"
+    fi
 }
 
 # Show the current branch and working-tree status for the primary Haya repositories.
@@ -134,6 +175,7 @@ function list() {
         '  gch         Select a local or remote Git branch with fzf and check it out.' \
         '  gfc         Fetch from Git, then check out the branch supplied as its argument.' \
         '  jj          Open Haya repositories in Kitty tabs running Neovim.' \
+        '  th          Create/attach persistent Haya tmux session (one named window per repo).' \
         '  ss          Show Git status for the primary Haya repositories.' \
         '  gchp        Select a Git branch or tag with an fzf commit-log preview and check it out.' \
         '  list        Print this list of aliases and functions.' \
