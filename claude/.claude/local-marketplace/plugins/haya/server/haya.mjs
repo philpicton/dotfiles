@@ -193,6 +193,7 @@ async function waitHealthy(keys, timeoutMs, signal) {
 // ---------------------------------------------------------------------------
 
 const CREATE_DIR = `${HAYA_DIR}/haysto-v2-create`;
+const COLLECT_DIR = `${HAYA_DIR}/haysto-v2-collect`;
 
 const FILES_DESC =
   "Optional app-relative file paths to check instead of the whole project (e.g. ['components/AppFoo.vue']). Omit to check everything.";
@@ -209,13 +210,13 @@ async function targetFiles(appDir, files) {
   return gitFiles(appDir);
 }
 
-async function createViaWrapper(script, extraFlags, files) {
-  const targets = await targetFiles(CREATE_DIR, files);
+async function viaWrapper(appDir, script, extraFlags, files) {
+  const targets = await targetFiles(appDir, files);
   if (!targets.length) return "(no files to check)";
   return run(
     "sh",
     ["./scripts/run-in-docker.sh", "node", script, ...extraFlags, ...targets],
-    { cwd: CREATE_DIR, timeout: LONG_TIMEOUT },
+    { cwd: appDir, timeout: LONG_TIMEOUT },
   );
 }
 
@@ -468,7 +469,7 @@ const tools = [
       "Run eslint on haysto-v2-create inside docker. Mode check reports errors, fix auto-fixes them. Pass files to check only those paths.",
     properties: { mode: checkFix("check or auto-fix"), files: filesProp },
     execute: (args) =>
-      createViaWrapper("scripts/eslint.mjs", args.mode === "fix" ? ["--fix"] : [], args.files),
+      viaWrapper(CREATE_DIR, "scripts/eslint.mjs", args.mode === "fix" ? ["--fix"] : [], args.files),
   },
   {
     name: "haya_create_format",
@@ -476,35 +477,37 @@ const tools = [
       "Run prettier on haysto-v2-create inside docker. Mode check reports diffs, fix rewrites files. Pass files to check only those paths.",
     properties: { mode: checkFix("check or write fixes"), files: filesProp },
     execute: (args) =>
-      createViaWrapper("scripts/prettier.mjs", args.mode === "fix" ? ["--write"] : [], args.files),
+      viaWrapper(CREATE_DIR, "scripts/prettier.mjs", args.mode === "fix" ? ["--write"] : [], args.files),
   },
   {
     name: "haya_create_baseline",
     description:
       "TypeScript baseline check for haysto-v2-create inside docker: fails only on new errors vs the baseline. The baseline file is maintainer-managed — fix the code, never rewrite the baseline.",
     properties: { files: filesProp },
-    execute: (args) => createViaWrapper("scripts/typescript-baseline-check.mjs", [], args.files),
+    execute: (args) => viaWrapper(CREATE_DIR, "scripts/typescript-baseline-check.mjs", [], args.files),
   },
   {
     name: "haya_collect_lint",
     description:
-      "Run eslint on haysto-v2-collect inside docker. Mode check reports, fix auto-fixes. Pass files to lint only those paths.",
+      "Run eslint on haysto-v2-collect inside docker. Mode check reports errors, fix auto-fixes them. Pass files to check only those paths.",
     properties: { mode: checkFix("check or auto-fix"), files: filesProp },
-    execute: (args) => nuxtLint("haysto-collect", args),
+    execute: (args) =>
+      viaWrapper(COLLECT_DIR, "scripts/eslint.mjs", args.mode === "fix" ? ["--fix"] : [], args.files),
   },
   {
     name: "haya_collect_format",
     description:
-      "Run prettier on haysto-v2-collect inside docker. Mode check reports, fix rewrites. Pass files to check only those paths.",
+      "Run prettier on haysto-v2-collect inside docker. Mode check reports diffs, fix rewrites files. Pass files to check only those paths.",
     properties: { mode: checkFix("check or write fixes"), files: filesProp },
-    execute: (args) => nuxtFormat("haysto-collect", args),
+    execute: (args) =>
+      viaWrapper(COLLECT_DIR, "scripts/prettier.mjs", args.mode === "fix" ? ["--write"] : [], args.files),
   },
   {
-    name: "haya_collect_typecheck",
+    name: "haya_collect_baseline",
     description:
-      "Typecheck haysto-v2-collect inside docker. check = full vue-tsc, baseline = fail only on new errors vs baseline. The baseline file is maintainer-managed — fix the code, never rewrite the baseline.",
-    properties: { mode: typecheckMode },
-    execute: (args) => nuxtTypecheck("haysto-collect", args),
+      "TypeScript baseline check for haysto-v2-collect inside docker: fails only on new errors vs the baseline. The baseline file is maintainer-managed — fix the code, never rewrite the baseline.",
+    properties: { files: filesProp },
+    execute: (args) => viaWrapper(COLLECT_DIR, "scripts/typescript-baseline-check.mjs", [], args.files),
   },
   {
     name: "haya_collaborate_lint",

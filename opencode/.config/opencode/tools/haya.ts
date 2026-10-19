@@ -455,10 +455,11 @@ export const haya_wait_healthy = tool({
 });
 
 // ---------------------------------------------------------------------------
-// haysto-v2-create (host wrapper delegates into docker via run-in-docker.sh)
+// haysto-v2-create / haysto-v2-collect (host wrapper delegates into docker via run-in-docker.sh)
 // ---------------------------------------------------------------------------
 
 const CREATE_DIR = `${HAYA_DIR}/haysto-v2-create`;
+const COLLECT_DIR = `${HAYA_DIR}/haysto-v2-collect`;
 
 const FILES_DESC =
   "Optional app-relative file paths to check instead of the whole project (e.g. ['components/AppFoo.vue']). Omit to check everything.";
@@ -481,17 +482,18 @@ async function targetFiles(
   return gitFiles(appDir);
 }
 
-async function createViaWrapper(
+async function viaWrapper(
+  appDir: string,
   script: string,
   extraFlags: string[],
   files?: string[],
 ): Promise<string> {
-  const targets = await targetFiles(CREATE_DIR, files);
+  const targets = await targetFiles(appDir, files);
   if (!targets.length) return "(no files to check)";
   return run(
     "sh",
     ["./scripts/run-in-docker.sh", "node", script, ...extraFlags, ...targets],
-    { cwd: CREATE_DIR, timeout: LONG_TIMEOUT },
+    { cwd: appDir, timeout: LONG_TIMEOUT },
   );
 }
 
@@ -509,7 +511,8 @@ export const haya_create_lint = tool({
       .optional(),
   },
   async execute(args) {
-    return createViaWrapper(
+    return viaWrapper(
+      CREATE_DIR,
       "scripts/eslint.mjs",
       args.mode === "fix" ? ["--fix"] : [],
       args.files,
@@ -531,7 +534,8 @@ export const haya_create_format = tool({
       .optional(),
   },
   async execute(args) {
-    return createViaWrapper(
+    return viaWrapper(
+      CREATE_DIR,
       "scripts/prettier.mjs",
       args.mode === "fix" ? ["--write"] : [],
       args.files,
@@ -549,7 +553,8 @@ export const haya_create_baseline = tool({
       .optional(),
   },
   async execute(args) {
-    return createViaWrapper(
+    return viaWrapper(
+      CREATE_DIR,
       "scripts/typescript-baseline-check.mjs",
       [],
       args.files,
@@ -557,13 +562,9 @@ export const haya_create_baseline = tool({
   },
 });
 
-// ---------------------------------------------------------------------------
-// haysto-v2-collect (npm scripts run directly inside the container)
-// ---------------------------------------------------------------------------
-
 export const haya_collect_lint = tool({
   description:
-    "Run eslint on haysto-v2-collect inside docker. Mode check reports, fix auto-fixes. Pass files to lint only those paths. Only for work in the Haysto Haya monorepo (~/code/haysto-v2 and its haysto-v2-create/collect/collaborate sub-repos); do not use in other projects.",
+    "Run eslint on haysto-v2-collect inside docker. Mode check reports errors, fix auto-fixes them. Pass files to check only those paths. Only for work in the Haysto Haya monorepo (~/code/haysto-v2 and its haysto-v2-create/collect/collaborate sub-repos); do not use in other projects.",
   args: {
     mode: tool.schema
       .enum(["check", "fix"])
@@ -575,31 +576,18 @@ export const haya_collect_lint = tool({
       .optional(),
   },
   async execute(args) {
-    const targets = sanitizeFiles(args.files);
-    if (targets?.length) {
-      return composeRun(
-        "haysto-collect",
-        [
-          "npx",
-          "eslint",
-          ...(args.mode === "fix" ? ["--fix"] : []),
-          ...targets,
-        ],
-        { timeout: LONG_TIMEOUT },
-      );
-    }
-    if (args.files?.length) return "(no valid files to check — use app-relative paths)";
-    return composeRun(
-      "haysto-collect",
-      ["npm", "run", args.mode === "fix" ? "lint:fix" : "lint", "--silent"],
-      { timeout: LONG_TIMEOUT },
+    return viaWrapper(
+      COLLECT_DIR,
+      "scripts/eslint.mjs",
+      args.mode === "fix" ? ["--fix"] : [],
+      args.files,
     );
   },
 });
 
 export const haya_collect_format = tool({
   description:
-    "Run prettier on haysto-v2-collect inside docker. Mode check reports, fix rewrites. Pass files to check only those paths. Only for work in the Haysto Haya monorepo (~/code/haysto-v2 and its haysto-v2-create/collect/collaborate sub-repos); do not use in other projects.",
+    "Run prettier on haysto-v2-collect inside docker. Mode check reports diffs, fix rewrites files. Pass files to check only those paths. Only for work in the Haysto Haya monorepo (~/code/haysto-v2 and its haysto-v2-create/collect/collaborate sub-repos); do not use in other projects.",
   args: {
     mode: tool.schema
       .enum(["check", "fix"])
@@ -611,57 +599,36 @@ export const haya_collect_format = tool({
       .optional(),
   },
   async execute(args) {
-    const targets = sanitizeFiles(args.files);
-    if (targets?.length) {
-      return composeRun(
-        "haysto-collect",
-        [
-          "npx",
-          "prettier",
-          args.mode === "fix" ? "--write" : "--check",
-          "--log-level",
-          "warn",
-          ...targets,
-        ],
-        { timeout: LONG_TIMEOUT },
-      );
-    }
-    if (args.files?.length) return "(no valid files to check — use app-relative paths)";
-    return composeRun(
-      "haysto-collect",
-      ["npm", "run", args.mode === "fix" ? "format:fix" : "format", "--silent"],
-      { timeout: LONG_TIMEOUT },
+    return viaWrapper(
+      COLLECT_DIR,
+      "scripts/prettier.mjs",
+      args.mode === "fix" ? ["--write"] : [],
+      args.files,
     );
   },
 });
 
-export const haya_collect_typecheck = tool({
+export const haya_collect_baseline = tool({
   description:
-    "Typecheck haysto-v2-collect inside docker. check = full vue-tsc, baseline = fail only on new errors vs baseline. The baseline file is maintainer-managed — fix the code, never rewrite the baseline. Only for work in the Haysto Haya monorepo (~/code/haysto-v2 and its haysto-v2-create/collect/collaborate sub-repos); do not use in other projects.",
+    "TypeScript baseline check for haysto-v2-collect inside docker: fails only on new errors vs the baseline. The baseline file is maintainer-managed — fix the code, never rewrite the baseline. Only for work in the Haysto Haya monorepo (~/code/haysto-v2 and its haysto-v2-create/collect/collaborate sub-repos); do not use in other projects.",
   args: {
-    mode: tool.schema
-      .enum(["check", "baseline"])
-      .describe("typecheck mode")
-      .default("baseline"),
+    files: tool.schema
+      .array(tool.schema.string())
+      .describe(FILES_DESC)
+      .optional(),
   },
   async execute(args) {
-    if (args.mode === "check") {
-      return composeRun(
-        "haysto-collect",
-        ["npm", "run", "typecheck", "--silent"],
-        { timeout: LONG_TIMEOUT },
-      );
-    }
-    return composeRun(
-      "haysto-collect",
-      ["npm", "run", "typecheck:baseline", "--silent"],
-      { timeout: LONG_TIMEOUT },
+    return viaWrapper(
+      COLLECT_DIR,
+      "scripts/typescript-baseline-check.mjs",
+      [],
+      args.files,
     );
   },
 });
 
 // ---------------------------------------------------------------------------
-// haysto-v2-collaborate (same shape as collect)
+// haysto-v2-collaborate (npm scripts run directly inside the container)
 // ---------------------------------------------------------------------------
 
 export const haya_collaborate_lint = tool({
