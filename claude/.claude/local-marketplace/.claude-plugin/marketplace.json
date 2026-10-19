@@ -1,0 +1,11 @@
+{
+  "name": "phil-local",
+  "description": "Personal Claude Code plugins (ported from opencode)",
+  "owner": { "name": "Phil Picton" },
+  "plugins": [
+    { "name": "haya", "source": "./plugins/haya", "description": "Haya monorepo dev tools (stack lifecycle, logs, lint, format, typecheck, phpstan, seeders)" },
+    { "name": "chrome-devtools", "source": "./plugins/chrome-devtools", "description": "Chrome DevTools MCP server" },
+    { "name": "nuxt", "source": "./plugins/nuxt", "description": "Nuxt docs MCP server" },
+    { "name": "sentry", "source": "./plugins/sentry", "description": "Sentry MCP server (haysto org, OAuth)" }
+  ]
+}

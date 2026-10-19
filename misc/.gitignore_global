@@ -10,3 +10,5 @@ AGENTS.md
 docker-compose.override.yml
 
 
+
+**/.claude/settings.local.json

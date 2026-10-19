@@ -1,0 +1,5 @@
+{
+  "mcpServers": {
+    "haya": { "command": "node", "args": ["${CLAUDE_PLUGIN_ROOT}/server/haya.mjs"] }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "chrome-devtools",
+  "description": "Chrome DevTools MCP server",
+  "version": "1.0.0",
+  "author": { "name": "Phil Picton" }
+}

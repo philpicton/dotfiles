@@ -1,0 +1,6 @@
+{
+  "name": "sentry",
+  "description": "Sentry MCP server (OAuth via /mcp)",
+  "version": "1.0.0",
+  "author": { "name": "Phil Picton" }
+}

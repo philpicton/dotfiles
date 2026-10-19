@@ -1,0 +1,6 @@
+{
+  "name": "haya",
+  "description": "Haya monorepo dev tools as an MCP server",
+  "version": "1.0.0",
+  "author": { "name": "Phil Picton" }
+}
