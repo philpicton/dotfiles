@@ -51,5 +51,6 @@
       }
     }
   },
-  "theme": "custom:phil"
+  "theme": "custom:phil",
+  "switchModelsOnFlag": false
 }
