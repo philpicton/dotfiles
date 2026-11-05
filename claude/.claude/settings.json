@@ -6,7 +6,9 @@
     ],
     "deny": [
       "Read(//**/.env)",
-      "Edit(//**/.env)"
+      "Edit(//**/.env)",
+      "Edit(~/.claude/git-mode)",
+      "Edit(~/.dotfiles/claude/.claude/git-mode)"
     ],
     "ask": [
       "Bash(npm *)",
@@ -33,6 +35,15 @@
             "command": "node \"$HOME/.claude/hooks/env-guard.mjs\""
           }
         ]
+      },
+      {
+        "matcher": "Bash|Edit|Write|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$HOME/.claude/hooks/git-mode-guard.mjs\""
+          }
+        ]
       }
     ]
   },
@@ -41,7 +52,9 @@
     "chrome-devtools@phil-local": true,
     "nuxt@phil-local": true,
     "sentry@phil-local": true,
-    "typescript-lsp@claude-plugins-official": true
+    "typescript-lsp@claude-plugins-official": true,
+    "php-lsp@claude-plugins-official": true,
+    "github@anthropic-plugin-directory": true
   },
   "extraKnownMarketplaces": {
     "phil-local": {

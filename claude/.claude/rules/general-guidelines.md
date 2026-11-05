@@ -2,9 +2,13 @@
 
 ## 1. GIT USAGE
 
-- Critical: Do not use git commands which change things in a repository
-- Do not pull, do not push, do not commit, do not rebase, do not merge, do not create branches, do not delete branches, do not reset, do not stash, do not apply stashes, do not use any git commands that modify the repository.
-- You can use `git status` or `git log` or other non destructive git commands to check the status of the repository
+- Read-only git commands (`git status`, `git log`, `git diff`, `git show`, etc.) are always allowed.
+- Git commands that modify a repository (commit, merge, rebase, reset, stash, branch creation/deletion, push, pull, etc.) are governed by the user's **git mode**, set in `~/.claude/git-mode` and enforced by the `git-guard` hook:
+  - `readonly` (default; also applies if the file is missing or invalid): do not use any git command that modifies the repository.
+  - `ask`: such commands may be used, but each one prompts the user for approval.
+  - `allow`: local ones may be used without a prompt; remote ones (`push`, `pull`, `fetch`, `clone`) still prompt.
+- Critical: the git mode is the user's switch alone. Never create, edit, move or delete the git mode file, and never try to work around the git hooks. If a task needs a git command the current mode blocks, say so and let the user either run it themselves or change the mode.
+- Even when the mode permits it, only run git commands that modify the repository when the user's task calls for them, and confirm with the user before destructive or history-rewriting ones (`reset --hard`, `clean`, `branch -D`, force push, rebasing shared branches).
 
 ## 2. Projects
 
@@ -17,7 +21,7 @@
 
 - Do not scan, share, or expose sensitive information in .env files or within the codebase.
 - If you encounter sensitive information, flag it to the user and do not share it in your responses.
-- Do not interact with remote origin repositories of project you are working on
+- Do not interact with remote origin repositories of project you are working on, except for git remote commands the git mode permits (see §1)
 - Do not leave artifacts in the repository that could be used to identify you or your actions
 
 ## 4. Instructions

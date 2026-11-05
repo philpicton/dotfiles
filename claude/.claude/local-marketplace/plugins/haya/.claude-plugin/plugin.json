@@ -1,6 +1,6 @@
 {
   "name": "haya",
-  "description": "Haya monorepo dev tools as an MCP server",
-  "version": "1.0.0",
+  "description": "Haya monorepo dev tools as an MCP server, plus a local browser-testing skill (test logins, workflow)",
+  "version": "1.0.1",
   "author": { "name": "Phil Picton" }
 }

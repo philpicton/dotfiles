@@ -44,6 +44,8 @@ There are no build, test, or lint commands — this is a configuration-only repo
 
 **zshrc** is intentionally a single flat file (`zshrc/.zshrc`) — no modular sourcing. Keep it that way unless there's a strong reason to split.
 
+**claude/.claude** is the Claude Code config. Its git permissions are controlled by the user's flag file `claude/.claude/git-mode` (`readonly` | `ask` | `allow`; missing or invalid means `readonly`), which `hooks/git-guard.mjs` reads on every command. `hooks/git-mode-guard.mjs` stops agents from editing it. Never change the flag file's value; that is the user's decision. See the readme for details.
+
 **scripts/code/scripts/repo-man.py** is a 1500-line Python TUI for managing Haya org repos. It's launched from Neovim via `<leader>hh` and the `hh`/`haya` shell aliases. It uses threading + TTL caching for GitHub API and macOS Calendar calls — maintain those patterns when extending it.
 
 ## Copilot Behaviour
