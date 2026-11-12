@@ -35,8 +35,10 @@ return {
           "snippet_backward",
           "fallback",
         },
+        -- Enter never accepts a completion; it always inserts a newline.
+        -- Use <S-Tab> (or <C-y>) to accept.
+        ["<CR>"] = { "fallback" },
         -- ["<S-CR>"] = { "select_and_accept" },
-        -- ["<CR>"] = { "fallback" },
         -- ["<Tab>"] = {
         --   LazyVim.cmp.map({ "snippet_forward", "ai_accept" }),
         --   "fallback",
