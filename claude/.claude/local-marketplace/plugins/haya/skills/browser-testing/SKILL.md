@@ -17,7 +17,7 @@ Local docker stack only. Everything below is test data — fine to use freely.
 | API | https://api.haya-local.dev | — |
 | mail catcher | https://mail.haya-local.dev | — |
 
-Check the stack first with `haya_status`; if containers aren't running use `haya_up` / `haya_wait_healthy`. Restarting/rebuilding containers is the user's call — ask first.
+Check the stack first with `haya_status`; if containers aren't running use `haya_up` / `haya_wait_healthy`. Restarting or rebuilding containers is fine when needed.
 
 ## Logins — password for all of these is `password`
 
@@ -53,7 +53,7 @@ Super admin skips many permission/role branches. When a change touches role, per
   ```
   haya_exec_api: php artisan tinker --execute='use Illuminate\Support\Facades\{DB,Hash}; DB::table("users")->whereIn("id",[84,85])->update(["password"=>Hash::make("password")]);'
   ```
-  Other partner users (86–90: experian, picnic, oaknorth, persimmon, charleschurch) still have empty passwords — ask before changing more.
+  Other partner users (86–90: experian, picnic, oaknorth, persimmon, charleschurch) still have empty passwords; set them the same way if needed.
 - Factory partner users (e.g. `florence.cook@example.net`) accept `password` but have no partners → empty pages.
 
 Not available: no user with multiple related accounts, so the account switcher can't be tested without setting data up.
@@ -67,7 +67,11 @@ IDs reflect the local DB as of Nov 2026. If one doesn't exist, look it up rather
 3. **Log in:** go to `/auth/login`, `take_snapshot`, `fill` Email and Password, click "Sign in". Pre-login console 419/401 errors are normal.
 4. **Per page:** `navigate_page`, then wait about 6–10 s (an `evaluate_script` that sleeps, then returns `location.href` plus the `main` innerText), then `list_console_messages` with `types: ["error"]`. Check warnings separately, because Vue warnings are noisy (see below).
 5. **Checking a feature:** read `document.body.innerText` or target elements with `evaluate_script`. Use `take_screenshot` (jpeg, quality ~45) for visual checks. Modals are `[role=dialog]`. Nuxt state such as the current user: `document.querySelector('#__nuxt').__vue_app__.config.globalProperties.$nuxt.payload.state['$suser']`.
-6. **Don't change data** unless the user asks: open forms and modals to inspect them, then Cancel/Close. Never submit, approve, delete or send.
+6. **Changing local data is fine:** submit, approve, delete and send as a test needs. Never touch production or live third-party services, and never use real customer details.
+   - **But keep the database usable.** Dropping and re-seeding (`haya_api_seed`) is a last resort, not a routine step, because it's slow. Prefer data that tests can share and re-run against.
+   - **Seeding data for a test:** create new, self-contained records (a new case, user or document) rather than changing the shared ones listed above. Don't leave half-created records, and don't break records other tests rely on, such as by changing a seeded account's password, role or case status.
+   - **Destructive actions** (deleting, status changes, approvals): do them on records created for the test, not on the documented test accounts and cases.
+   - **Note what you created**, such as the IDs and how they were made, so they can be reused or cleaned up, and say so in the report.
 7. **Logout check:** a good test for auth-state changes. It should land on `/auth/login?redirect=…` without errors.
 
 ## Known environment quirks (not app bugs)
@@ -80,7 +84,7 @@ IDs reflect the local DB as of Nov 2026. If one doesn't exist, look it up rather
 
 ## Finding test data
 
-Use `haya_exec_api` with tinker (read-only queries unless the user agrees otherwise). Roles are spatie: join `model_has_roles` → `roles.name`. Examples:
+Use `haya_exec_api` with tinker (writes to the local DB are fine, following the rules in step 6 of the browser workflow). Roles are spatie: join `model_has_roles` → `roles.name`. Examples:
 ```
 # users per role, with a check that "password" works
 php artisan tinker --execute='use Illuminate\Support\Facades\{DB,Hash}; foreach (DB::table("model_has_roles")->join("roles","roles.id","=","role_id")->join("users","users.id","=","model_id")->orderBy("roles.id")->get(["roles.name as role","users.id","users.email","users.password"])->groupBy("role") as $r=>$g){echo "$r\n"; foreach($g->take(4) as $u) echo "  $u->id $u->email ".(Hash::check("password",$u->password)?"ok":"NO-PW")."\n";}'
